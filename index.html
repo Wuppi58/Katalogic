@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#11141b">
+    <meta name="description" content="Dein privater Katalog für alles, was dir wichtig ist.">
+    <title>Katalogic – Dein persönlicher Katalog</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles.css?v=game-details-5">
+    <script src="app.js?v=game-details-5" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a id="home-link" class="brand" href="./" aria-label="Zur Katalogic-Startseite">
+        <span class="brand-mark" aria-hidden="true">k.</span>
+        <span>Katalogic</span>
+      </a>
+      <div class="topbar-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Zum hellen Design wechseln" title="Zum hellen Design wechseln">
+          <span class="theme-icon" aria-hidden="true">☀</span><span class="theme-label">Hell</span>
+        </button>
+        <span class="offline-label"><span class="status-dot" id="connection-dot"></span><span id="connection-label">Lokal verfügbar</span></span>
+      </div>
+    </header>
+
+    <nav id="app-taskbar" class="app-taskbar" aria-label="Hauptnavigation">
+      <button class="taskbar-link is-active" type="button" data-view="collection" aria-current="page">
+        <span class="taskbar-icon" aria-hidden="true">▤</span><span>Sammlung</span>
+      </button>
+      <button class="taskbar-link" type="button" data-view="search">
+        <span class="taskbar-icon" aria-hidden="true">⌕</span><span>Suchen</span>
+      </button>
+      <button class="taskbar-link" type="button" data-view="add">
+        <span class="taskbar-icon" aria-hidden="true">＋</span><span>Hinzufügen</span>
+      </button>
+      <button class="taskbar-link" type="button" data-view="sync">
+        <span class="taskbar-icon" aria-hidden="true">⇄</span><span>Sync</span>
+      </button>
+    </nav>
+
+    <main class="layout">
+      <section id="welcome-intro" class="intro">
+        <p class="eyebrow">DEIN PERSÖNLICHER KATALOG</p>
+        <h1>Alles an seinem<br><span>Platz.</span></h1>
+        <p class="intro-copy">Eine kleine Sammlung für die Dinge, die du nicht vergessen möchtest. Lokal gespeichert, offline nutzbar und optional mit Supabase synchronisiert.</p>
+        <div id="welcome-open-actions" class="welcome-actions hidden">
+          <button class="button button-primary" type="button" data-view="collection">Sammlung öffnen</button>
+          <button class="button button-secondary" type="button" data-view="add">Artikel hinzufügen</button>
+        </div>
+      </section>
+
+      <section id="collection-view" class="app-view hidden" aria-labelledby="catalog-heading">
+        <div class="catalog-title">
+          <div>
+            <p class="eyebrow">DEINE SAMMLUNG</p>
+            <h2 id="catalog-heading">Katalog</h2>
+          </div>
+          <span id="item-count" class="count-badge">0 EINTRÄGE</span>
+        </div>
+        <section id="collection-categories" class="collection-categories" aria-labelledby="collection-categories-heading">
+          <div class="collection-categories-heading">
+            <div>
+              <p class="eyebrow">DEINE BEREICHE</p>
+              <h3 id="collection-categories-heading">Sammlungen</h3>
+            </div>
+            <label class="category-filter-label" for="category-filter">Sammlung auswählen</label>
+          </div>
+          <select id="category-filter" class="category-filter" aria-label="Sammlung auswählen">
+            <option value="__choose__">Sammlung auswählen …</option>
+            <option value="">Alle Sammlungen</option>
+          </select>
+        </section>
+        <div id="item-list" class="item-list" aria-live="polite"></div>
+        <div id="collection-prompt" class="empty-state">
+          <span class="empty-icon" aria-hidden="true">⌄</span>
+          <h3>Wähle zuerst eine Sammlung.</h3>
+          <p>Deine Einträge werden angezeigt, sobald du oben eine Kategorie auswählst.</p>
+        </div>
+        <div id="empty-state" class="empty-state">
+          <span class="empty-icon" aria-hidden="true">✳</span>
+          <h3>Hier beginnt deine Sammlung.</h3>
+          <p>Füge deinen ersten Eintrag hinzu – er bleibt privat auf deinen Geräten.</p>
+        </div>
+      </section>
+
+      <section id="search-view" class="app-view hidden" aria-labelledby="library-search-heading">
+        <div class="page-heading">
+          <p class="eyebrow">DEIN BESTAND</p>
+          <h2 id="library-search-heading">In meiner Sammlung suchen</h2>
+          <p class="muted">Prüfe Namen, Kategorien, Notizen und Barcodes deiner gespeicherten Einträge.</p>
+        </div>
+        <form id="library-search-form" class="card library-search-form">
+          <label for="library-search-query">Artikel in deiner Sammlung suchen</label>
+          <div class="search-row">
+            <input id="library-search-query" type="search" autocomplete="off" placeholder="Name, Kategorie, Lagerort, Barcode oder ISBN">
+            <button class="button button-primary" type="submit">Suchen</button>
+          </div>
+          <p id="library-search-message" class="form-message" role="status" aria-live="polite">Gib einen Suchbegriff ein, um deinen Bestand zu prüfen.</p>
+        </form>
+        <div id="library-search-results" class="item-list library-search-results" aria-live="polite"></div>
+      </section>
+
+      <section id="add-view" class="app-view hidden" aria-labelledby="add-page-heading">
+        <div class="page-heading">
+          <p class="eyebrow">NEU IN DEINER SAMMLUNG</p>
+          <h2 id="add-page-heading">Artikel hinzufügen</h2>
+          <p class="muted">Suche online per Barcode oder Name, nutze Google oder trage die Angaben manuell ein.</p>
+        </div>
+        <section id="lookup-heading" class="lookup-card card" aria-labelledby="lookup-title-heading">
+          <div class="lookup-title">
+            <div>
+              <p class="eyebrow">ONLINE ODER PER SCAN</p>
+              <h3 id="lookup-title-heading">Artikel finden</h3>
+            </div>
+            <span class="lock-icon" aria-hidden="true">⌕</span>
+          </div>
+          <p class="muted">Scanne oder suche Bücher, Spiele, Geräte, Filament, Filme, Zubehör und mehr. Wähle einen Treffer aus und übernimm die Daten.</p>
+          <p id="search-provider-message" class="provider-message">Produktsuche wird geladen …</p>
+          <label for="lookup-category">Kategorie für die Suche</label>
+          <select id="lookup-category" class="category-filter lookup-category">
+            <option value="">Automatisch erkennen</option>
+            <option value="Spiele">Spiele</option>
+            <option value="Geräte">Geräte</option>
+            <option value="Filament">Filament</option>
+            <option value="Filme">Filme</option>
+            <option value="Zubehör">Zubehör</option>
+            <option value="Laser">Laser</option>
+            <option value="3D Drucker">3D Drucker</option>
+            <option value="Kleinteile">Kleinteile</option>
+            <option value="Bücher">Bücher</option>
+            <option value="Sonstiges">Sonstiges</option>
+          </select>
+          <div class="lookup-controls">
+            <form id="barcode-form" class="lookup-form">
+              <label for="barcode-query">Barcode scannen oder eingeben (EAN/UPC/ISBN)</label>
+              <div class="search-row">
+                <input id="barcode-query" inputmode="numeric" autocomplete="off" placeholder="Barcode scannen oder eingeben">
+                <button class="button button-secondary" type="submit">Suchen</button>
+              </div>
+            </form>
+            <button id="start-scanner" class="button button-primary scan-button" type="button">▦ Kamera scannen</button>
+          </div>
+          <form id="title-search-form" class="lookup-form">
+            <label for="title-query">Name, Titel, Marke oder Modell suchen</label>
+            <div class="search-row">
+              <input id="title-query" autocomplete="off" placeholder="z. B. Spiel, Drucker, Filament, Buch …">
+              <button class="button button-secondary" type="submit">Im Internet suchen</button>
+            </div>
+          </form>
+          <div id="scanner-panel" class="scanner-panel hidden">
+            <video id="scanner-video" playsinline muted></video>
+            <p id="scanner-message" class="form-message" role="status" aria-live="polite"></p>
+            <button id="stop-scanner" class="button button-secondary" type="button">Kamera schließen</button>
+          </div>
+          <div id="lookup-message" class="form-message" role="status" aria-live="polite"></div>
+          <div id="lookup-results" class="lookup-results" aria-live="polite"></div>
+          <div id="google-fallback" class="google-fallback hidden">
+            <span id="google-fallback-label">Keine passenden Artikeldaten gefunden?</span>
+            <a id="google-search-link" href="https://www.google.com/" target="_blank" rel="noopener noreferrer">Bei Google suchen <span aria-hidden="true">↗</span></a>
+            <a id="google-shopping-link" class="hidden" href="https://www.google.com/" target="_blank" rel="noopener noreferrer">Google Shopping <span aria-hidden="true">↗</span></a>
+          </div>
+          <section class="google-scan-widget" aria-labelledby="google-scan-heading">
+            <div class="google-widget-heading">
+              <span class="google-g" aria-hidden="true">G</span>
+              <div>
+                <p class="eyebrow">DIREKT ZU GOOGLE</p>
+                <h3 id="google-scan-heading">Barcode scannen & suchen</h3>
+              </div>
+            </div>
+            <p class="google-widget-copy">Scanne mit der Kamera oder gib einen Barcode ein. Google öffnet sich mit dem Code in einem neuen Tab.</p>
+            <div class="google-scan-form">
+              <label for="google-barcode-query">Barcode für die Google-Suche</label>
+              <div class="search-row">
+                <input id="google-barcode-query" inputmode="numeric" autocomplete="off" placeholder="EAN, UPC oder ISBN">
+                <a id="google-widget-open" class="button button-secondary" href="https://www.google.com/search" target="_blank" rel="noopener noreferrer">Google öffnen</a>
+              </div>
+              <a id="google-widget-same-tab" class="google-same-tab-link" href="https://www.google.com/search">Falls kein neuer Tab erscheint: Google hier öffnen</a>
+            </div>
+            <button id="google-camera-scan" class="button button-primary google-camera-button" type="button">▦ Scannen & Google öffnen</button>
+            <p id="google-scan-message" class="form-message" role="status" aria-live="polite">Tipp: Auch ein USB-/Bluetooth-Scanner funktioniert im Barcode-Feld.</p>
+          </section>
+        </section>
+        <form id="item-form" class="card item-form">
+          <h3 id="item-form-heading">Etwas hinzufügen</h3>
+          <div id="selected-preview" class="selected-preview hidden"></div>
+          <fieldset id="game-details" class="game-details hidden">
+            <legend>Zusätzliche Spieldetails <span class="optional-label">(optional)</span></legend>
+            <p class="game-details-help">Für Spiele ausfüllen – die Angaben lassen sich später bearbeiten.</p>
+            <div class="field-pair">
+              <div>
+                <label for="game-platform">Plattform</label>
+                <select id="game-platform" data-game-field="platform" data-has-other>
+                  <option value="">Bitte auswählen</option>
+                  <optgroup label="Nintendo">
+                    <option>Nintendo Switch</option><option>Nintendo Switch 2</option><option>Wii U</option><option>Wii</option>
+                    <option>GameCube</option><option>Nintendo 64</option><option>Super Nintendo (SNES)</option><option>NES</option>
+                    <option>Game Boy</option><option>Game Boy Color</option><option>Game Boy Advance</option><option>Nintendo DS</option>
+                    <option>Nintendo 3DS</option><option>Virtual Boy</option>
+                  </optgroup>
+                  <optgroup label="PlayStation">
+                    <option>PlayStation 5</option><option>PlayStation 4</option><option>PlayStation 3</option><option>PlayStation 2</option>
+                    <option>PlayStation</option><option>PSP</option><option>PlayStation Vita</option>
+                  </optgroup>
+                  <optgroup label="Xbox">
+                    <option>Xbox Series X|S</option><option>Xbox One</option><option>Xbox 360</option><option>Xbox</option>
+                  </optgroup>
+                  <optgroup label="Weitere">
+                    <option>PC (Windows)</option><option>Mac</option><option>Steam Deck</option><option>Sega Dreamcast</option>
+                    <option>Sega Saturn</option><option>Sega Mega Drive</option><option>Atari</option><option value="__other__">Andere …</option>
+                  </optgroup>
+                </select>
+                <input class="game-other-input hidden" data-game-other="platform" aria-label="Andere Plattform eingeben" maxlength="60" placeholder="Plattform eingeben">
+              </div>
+              <div>
+                <label for="game-edition">Edition</label>
+                <select id="game-edition" data-game-field="edition" data-has-other>
+                  <option value="">Bitte auswählen</option>
+                  <option>Standard Edition</option><option>Day One Edition</option><option>Launch Edition</option>
+                  <option>Deluxe Edition</option><option>Special Edition</option><option>Limited Edition</option>
+                  <option>Collector’s Edition</option><option>Ultimate Edition</option><option>Game of the Year Edition</option>
+                  <option>Complete Edition</option><option>Definitive Edition</option><option>Remastered</option>
+                  <option>Steelbook Edition</option><option>Platinum / Greatest Hits</option><option value="__other__">Andere …</option>
+                </select>
+                <input class="game-other-input hidden" data-game-other="edition" aria-label="Andere Edition eingeben" maxlength="80" placeholder="Edition eingeben">
+              </div>
+            </div>
+            <div class="field-pair">
+              <div>
+                <label for="game-region">Region</label>
+                <select id="game-region" data-game-field="region" data-has-other>
+                  <option value="">Bitte auswählen</option>
+                  <option>PAL (Europa)</option><option>PAL (Australien)</option><option>NTSC-U / USA</option>
+                  <option>NTSC-J / Japan</option><option>NTSC-K / Korea</option><option>China</option>
+                  <option>Worldwide / Region Free</option><option value="__other__">Andere …</option>
+                </select>
+                <input class="game-other-input hidden" data-game-other="region" aria-label="Andere Region eingeben" maxlength="40" placeholder="Region eingeben">
+              </div>
+              <div>
+                <label for="game-medium">Speichermedium</label>
+                <select id="game-medium" data-game-field="medium">
+                  <option value="">Bitte auswählen</option>
+                  <option>Cartridge / Modul</option>
+                  <option>Disc</option>
+                  <option>UMD</option>
+                  <option>Spielkarte</option>
+                  <option>Speicherkarte</option>
+                  <option>Diskette 3,5 Zoll</option>
+                  <option>Diskette 5,25 Zoll</option>
+                  <option>Download-Code</option>
+                  <option>Digital</option>
+                  <option>Sonstiges</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-pair">
+              <div>
+                <label for="game-developer">Entwickler</label>
+                <input id="game-developer" data-game-field="developer" maxlength="100">
+              </div>
+              <div>
+                <label for="game-publisher">Publisher</label>
+                <input id="game-publisher" data-game-field="publisher" maxlength="100">
+              </div>
+            </div>
+            <div class="field-pair">
+              <div>
+                <label for="game-release-year">Erscheinungsjahr</label>
+                <input id="game-release-year" data-game-field="releaseYear" type="number" min="1970" max="2100" step="1" placeholder="z. B. 2024">
+              </div>
+              <div>
+                <label for="game-condition">Zustand</label>
+                <select id="game-condition" data-game-field="condition">
+                  <option value="">Bitte auswählen</option>
+                  <option>Neu / versiegelt</option>
+                  <option>Sehr gut</option>
+                  <option>Gut</option>
+                  <option>Gebrauchsspuren</option>
+                  <option>Defekt</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-pair">
+              <div>
+                <label for="game-original-box">Originalhülle / Verpackung</label>
+                <select id="game-original-box" data-game-field="originalBox">
+                  <option value="">Bitte auswählen</option>
+                  <option>Ja</option>
+                  <option>Nein</option>
+                </select>
+              </div>
+              <div>
+                <label for="game-manual">Originalanleitung</label>
+                <select id="game-manual" data-game-field="manual">
+                  <option value="">Bitte auswählen</option>
+                  <option>Ja</option>
+                  <option>Nein</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-pair">
+              <div>
+                <label for="game-extras">Beilagen / Extras</label>
+                <input id="game-extras" data-game-field="extras" maxlength="160" placeholder="z. B. Karte, Poster, Steelbook">
+              </div>
+              <div>
+                <label for="game-purchase-date">Kaufdatum</label>
+                <input id="game-purchase-date" data-game-field="purchaseDate" type="date">
+              </div>
+            </div>
+            <label for="game-purchase-price">Kaufpreis (€)</label>
+            <input id="game-purchase-price" data-game-field="purchasePrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="z. B. 49,99">
+          </fieldset>
+          <label for="item-name">Name</label>
+          <input id="item-name" name="name" maxlength="120" placeholder="Zum Beispiel: Espressomühle" required>
+          <div class="field-pair">
+            <div>
+              <label for="item-category">Kategorie</label>
+              <select id="item-category" name="category">
+                <option value="Sonstiges">Sonstiges</option>
+                <option value="Spiele">Spiele</option>
+                <option value="Geräte">Geräte</option>
+                <option value="Filament">Filament</option>
+                <option value="Filme">Filme</option>
+                <option value="Zubehör">Zubehör</option>
+                <option value="Laser">Laser</option>
+                <option value="3D Drucker">3D Drucker</option>
+                <option value="Kleinteile">Kleinteile</option>
+                <option value="Bücher">Bücher</option>
+              </select>
+            </div>
+            <div>
+              <label for="item-notes">Notiz</label>
+              <input id="item-notes" name="notes" maxlength="500" placeholder="Modell, Ort, Erinnerung …">
+            </div>
+          </div>
+          <label for="item-location">Lagerort <span class="optional-label">(optional)</span></label>
+          <input id="item-location" name="location" maxlength="120" autocomplete="off" placeholder="z. B. Regal 2, Kiste A, Schrank im Büro">
+          <button id="game-details-toggle" class="button button-secondary game-details-toggle hidden" type="button" aria-expanded="false" aria-controls="game-details">
+            Spieldetails öffnen
+          </button>
+          <label for="item-barcode">Barcode / ISBN <span class="optional-label">(optional)</span></label>
+          <input id="item-barcode" name="barcode" maxlength="32" inputmode="numeric" placeholder="EAN, UPC oder ISBN">
+          <div class="button-row">
+            <button id="save-item" class="button button-primary" type="submit">Eintrag speichern</button>
+            <button id="cancel-edit" class="button button-secondary hidden" type="button">Abbrechen</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="sync-view" class="app-view hidden" aria-labelledby="sync-page-heading">
+        <div class="page-heading">
+          <p class="eyebrow">GERÄTEÜBERGREIFEND</p>
+          <h2 id="sync-page-heading">Synchronisation & Sicherung</h2>
+          <p class="muted">Deine Sammlung wird automatisch auf diesem Gerät gespeichert und kann offline genutzt werden. Verbinde Supabase für weitere Geräte oder erstelle eine Datei-Sicherung.</p>
+        </div>
+        <section class="settings-card card" aria-labelledby="sync-id-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">GERÄTE VERBINDEN</p>
+              <h3 id="sync-id-heading">Sammlungs-ID</h3>
+            </div>
+            <span class="lock-icon" aria-hidden="true">⇄</span>
+          </div>
+          <p class="muted">Zum Verbinden weiterer Geräte dieselbe Sammlungs-ID verwenden oder eine Sicherungsdatei importieren. Die ID ist keine Zugangssicherung.</p>
+          <form id="sync-id-form" class="settings-form">
+            <label for="sync-id">Deine Sammlungs-ID</label>
+            <div class="search-row">
+              <input id="sync-id" name="syncId" autocomplete="off" spellcheck="false" required>
+              <button id="copy-sync-id" class="button button-secondary" type="button">ID kopieren</button>
+            </div>
+            <button class="button button-primary" type="submit">Mit dieser Sammlung verbinden</button>
+            <p id="sync-id-message" class="form-message" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+        <section class="settings-card card" aria-labelledby="backup-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">LOKALE SICHERUNG</p>
+              <h3 id="backup-heading">Export & Import</h3>
+            </div>
+            <span class="lock-icon" aria-hidden="true">⇩</span>
+          </div>
+          <p class="muted settings-copy">Exportiere deine Sammlung als JSON-Datei oder stelle sie auf diesem oder einem anderen Gerät wieder her. Die Datei enthält deine Sammlungs-ID und alle Einträge.</p>
+          <div class="button-row">
+            <button id="export-data" class="button button-primary" type="button">Sammlung exportieren</button>
+            <button id="import-data-button" class="button button-secondary" type="button">Sicherung importieren</button>
+            <input id="import-data-file" class="hidden" type="file" accept=".json,application/json">
+          </div>
+          <p id="backup-message" class="form-message" role="status" aria-live="polite"></p>
+        </section>
+        <section id="sync-settings" class="settings-card card" aria-labelledby="sync-settings-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">CLOUD-SYNCHRONISATION</p>
+              <h3 id="sync-settings-heading">Supabase verbinden</h3>
+            </div>
+            <span class="lock-icon" aria-hidden="true">⇄</span>
+          </div>
+          <p class="muted settings-copy">Die Daten werden unverschlüsselt in der Supabase-Tabelle gespeichert. Nutze nur ein Projekt, dessen Zugriff du kontrollierst. Bilder werden weiterhin als externe Links gespeichert.</p>
+          <form id="settings-form" class="settings-form">
+            <label for="supabase-url">Supabase-Projekt-URL</label>
+            <input id="supabase-url" name="url" type="url" placeholder="https://deinprojekt.supabase.co" autocomplete="url">
+            <label for="supabase-key">Supabase Publishable-/Anon-Key</label>
+            <input id="supabase-key" name="key" type="password" autocomplete="off" placeholder="eyJ…">
+            <p class="field-hint">Nicht den geheimen service_role-Key verwenden. Die bisherige anonyme Tabellen-Policy kann Daten lesen und ändern; für sensible Sammlungen passe die Policies in Supabase an. Details stehen in der README.</p>
+            <div class="button-row">
+              <button class="button button-primary" type="submit">Einstellungen speichern</button>
+              <button id="sync-now" class="button button-secondary" type="button" disabled>Jetzt synchronisieren</button>
+            </div>
+          </form>
+          <p id="sync-message" class="form-message" role="status" aria-live="polite">Nur lokale Speicherung aktiv.</p>
+        </section>
+        <p class="privacy-note"><span aria-hidden="true">⌁</span> Offline lokal verfügbar · Supabase optional</p>
+      </section>
+    </main>
+    <footer>Mit Sorgfalt gesammelt. <span>© Katalogic</span></footer>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
