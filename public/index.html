@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1f6feb">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="style.css"><title>Katalogic</title></head>
+<body>
+<header><h1>📦 Katalogic</h1><button id="syncBtn" title="Synchronisation">🔄 Sync</button></header>
+<main>
+  <div class="row">
+    <input id="scan" placeholder="Barcode scannen oder eingeben + Enter" inputmode="numeric" autofocus autocomplete="off">
+    <button id="camBtn">📷 Kamera</button>
+    <button id="addBtn" class="primary">＋ Neu</button>
+  </div>
+  <div class="row"><input id="search" type="search" placeholder="Suchen…"></div>
+  <div class="cats" id="cats"></div>
+  <div class="grid" id="grid"></div>
+  <p class="msg" id="status"></p>
+</main>
+
+<dialog id="camDlg"><video id="video" playsinline muted></video><p class="msg" id="camMsg"></p><button id="camClose">Schließen</button></dialog>
+
+<dialog id="syncDlg"><form method="dialog">
+  <h3>Synchronisation</h3>
+  <p class="msg">Mit demselben Schlüssel auf allen Geräten werden die Daten abgeglichen. Wähle einen langen, geheimen Schlüssel (min. 6 Zeichen).</p>
+  <label>Schlüssel</label><input id="syncKey" autocomplete="off">
+  <p class="msg" id="syncMsg"></p>
+  <div class="row"><button id="syncSave" class="primary" value="x">Speichern &amp; synchronisieren</button><button value="cancel">Schließen</button></div>
+</form></dialog>
+
+<dialog id="itemDlg"><form id="itemForm" method="dialog">
+  <h3 id="dlgTitle">Artikel</h3>
+  <label>Barcode</label><div class="row"><input name="code"><button type="button" id="lookupBtn">🔎 Online suchen</button><a id="googleLink" target="_blank" rel="noopener"><button type="button">Google</button></a></div>
+  <p class="msg" id="lookupMsg"></p>
+  <label>Kategorie</label><select name="category" id="catSel"></select>
+  <label>Name</label><input name="name" required>
+  <label>Beschreibung / Eckdaten</label><textarea name="description" rows="4"></textarea>
+  <label>Menge</label><input name="qty" type="number" min="0" value="1">
+  <label>Bilder (antippen = Titelbild; oder eigenes Foto hochladen)</label>
+  <div class="imgs" id="imgs"></div>
+  <input type="file" id="file" accept="image/*" capture="environment">
+  <div class="row" style="margin-top:1rem"><button class="primary" value="save">Speichern</button><button value="cancel" formnovalidate>Abbrechen</button><button type="button" id="delBtn" class="danger">Löschen</button></div>
+</form></dialog>
+<script src="app.js"></script>
+</body></html>

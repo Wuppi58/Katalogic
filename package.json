@@ -1,0 +1,8 @@
+{
+  "name": "katalogic",
+  "version": "1.0.0",
+  "description": "PWA zum Katalogisieren verschiedenster Dinge mit Barcode-Scan, Online-Suche und Sync per Schlüssel",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "test": "node --test test/*.test.js" },
+  "license": "MIT"
+}
