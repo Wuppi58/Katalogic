@@ -8,8 +8,8 @@
     <title>Katalogic – Dein persönlicher Katalog</title>
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="styles.css?v=game-details-5">
-    <script src="app.js?v=game-details-5" defer></script>
+    <link rel="stylesheet" href="styles.css?v=ocr-6">
+    <script src="app.js?v=ocr-8" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -34,6 +34,9 @@
       </button>
       <button class="taskbar-link" type="button" data-view="add">
         <span class="taskbar-icon" aria-hidden="true">＋</span><span>Hinzufügen</span>
+      </button>
+      <button class="taskbar-link" type="button" data-view="barcode">
+        <span class="taskbar-icon" aria-hidden="true">▥</span><span>Barcode</span>
       </button>
       <button class="taskbar-link" type="button" data-view="sync">
         <span class="taskbar-icon" aria-hidden="true">⇄</span><span>Sync</span>
@@ -89,13 +92,19 @@
         <div class="page-heading">
           <p class="eyebrow">DEIN BESTAND</p>
           <h2 id="library-search-heading">In meiner Sammlung suchen</h2>
-          <p class="muted">Prüfe Namen, Kategorien, Notizen und Barcodes deiner gespeicherten Einträge.</p>
+          <p class="muted">Prüfe Namen, Kategorien, Notizen und Barcodes deiner gespeicherten Einträge – per Eingabe oder Barcode-Scan.</p>
         </div>
         <form id="library-search-form" class="card library-search-form">
           <label for="library-search-query">Artikel in deiner Sammlung suchen</label>
           <div class="search-row">
             <input id="library-search-query" type="search" autocomplete="off" placeholder="Name, Kategorie, Lagerort, Barcode oder ISBN">
             <button class="button button-primary" type="submit">Suchen</button>
+          </div>
+          <button id="library-start-scanner" class="button button-secondary scan-button" type="button">▦ Barcode scannen</button>
+          <div id="library-scanner-panel" class="scanner-panel hidden">
+            <video id="library-scanner-video" playsinline muted></video>
+            <p id="library-scanner-message" class="form-message" role="status" aria-live="polite"></p>
+            <button id="library-stop-scanner" class="button button-secondary" type="button">Kamera schließen</button>
           </div>
           <p id="library-search-message" class="form-message" role="status" aria-live="polite">Gib einen Suchbegriff ein, um deinen Bestand zu prüfen.</p>
         </form>
@@ -312,6 +321,24 @@
             <label for="game-purchase-price">Kaufpreis (€)</label>
             <input id="game-purchase-price" data-game-field="purchasePrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="z. B. 49,99">
           </fieldset>
+          <section class="ocr-panel" aria-labelledby="ocr-heading">
+            <h3 id="ocr-heading">Text aus Foto erkennen <span class="optional-label">(optional)</span></h3>
+            <p class="photo-help">Fotografiere die Hülle, das Cover oder das Etikett. Name, Kategorie, Barcode und weitere Eckdaten werden erkannt und in leere Felder eingetragen. Die Erkennung läuft auf deinem Gerät.</p>
+            <div class="file-picker">
+              <input id="ocr-image" class="file-input" type="file" accept="image/*" capture="environment">
+              <label for="ocr-image" class="button button-secondary file-button">Foto aufnehmen / auswählen</label>
+              <span id="ocr-file-name" class="file-name">Keine Datei ausgewählt</span>
+            </div>
+            <div class="button-row">
+              <button id="ocr-run" class="button button-secondary" type="button" disabled>Text erkennen</button>
+            </div>
+            <progress id="ocr-progress" class="ocr-progress hidden" max="100" value="0"></progress>
+            <p id="ocr-message" class="form-message" role="status" aria-live="polite"></p>
+            <div id="ocr-lines" class="ocr-lines hidden">
+              <p class="photo-help">Erkannte Zeilen – tippe eine Zeile an, um sie als Name zu übernehmen:</p>
+              <div id="ocr-line-list" class="ocr-line-list"></div>
+            </div>
+          </section>
           <label for="item-name">Name</label>
           <input id="item-name" name="name" maxlength="120" placeholder="Zum Beispiel: Espressomühle" required>
           <div class="field-pair">
@@ -335,8 +362,25 @@
               <input id="item-notes" name="notes" maxlength="500" placeholder="Modell, Ort, Erinnerung …">
             </div>
           </div>
+          <div id="accessory-field" class="hidden">
+            <span id="accessory-label">Zubehör <span class="optional-label">(optional)</span></span>
+            <input id="accessory-type" name="accessoryType" type="hidden" value="">
+            <div class="segmented" role="group" aria-labelledby="accessory-label">
+              <button type="button" class="button button-secondary segment" data-accessory="original" aria-pressed="false">Original-Zubehör</button>
+              <button type="button" class="button button-secondary segment" data-accessory="thirdParty" aria-pressed="false">Drittanbieter</button>
+            </div>
+          </div>
           <label for="item-location">Lagerort <span class="optional-label">(optional)</span></label>
           <input id="item-location" name="location" maxlength="120" autocomplete="off" placeholder="z. B. Regal 2, Kiste A, Schrank im Büro">
+          <label for="item-photos">Fotos <span class="optional-label">(optional, maximal 3)</span></label>
+          <div class="file-picker">
+            <input id="item-photos" class="file-input" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+            <label for="item-photos" class="button button-secondary file-button">Fotos auswählen</label>
+            <span id="item-photos-name" class="file-name">Keine Fotos ausgewählt</span>
+          </div>
+          <p class="photo-help">Fotos werden verkleinert und mit dem Eintrag gespeichert.</p>
+          <div id="item-photo-preview" class="item-photo-preview" aria-live="polite"></div>
+          <p id="photo-message" class="form-message" role="status" aria-live="polite"></p>
           <button id="game-details-toggle" class="button button-secondary game-details-toggle hidden" type="button" aria-expanded="false" aria-controls="game-details">
             Spieldetails öffnen
           </button>
@@ -346,6 +390,46 @@
             <button id="save-item" class="button button-primary" type="submit">Eintrag speichern</button>
             <button id="cancel-edit" class="button button-secondary hidden" type="button">Abbrechen</button>
           </div>
+        </form>
+      </section>
+
+      <section id="barcode-view" class="app-view hidden" aria-labelledby="barcode-page-heading">
+        <div class="page-heading">
+          <p class="eyebrow">ETIKETTEN</p>
+          <h2 id="barcode-page-heading">Barcode erstellen</h2>
+          <p class="muted">Erzeuge eigene Barcodes für Lagerorte, Kisten oder Artikel ohne Barcode und lade sie als Bild herunter.</p>
+        </div>
+        <section class="card item-form barcode-search" aria-labelledby="barcode-search-heading">
+          <h3 id="barcode-search-heading">Im Internet suchen</h3>
+          <p class="muted">Öffnet Google in einem neuen Tab. Gib optional einen Suchbegriff ein; Texte kannst du dort kopieren und unten einfügen.</p>
+          <div class="search-row">
+            <input id="barcode-web-search-query" type="search" maxlength="120" autocomplete="off" placeholder="Name, Titel, Marke oder Modell (optional)" aria-label="Suchbegriff für Google">
+            <a id="barcode-web-search-link" class="button button-primary" href="https://www.google.com/" target="_blank" rel="noopener noreferrer">Im Internet öffnen</a>
+          </div>
+        </section>
+        <form id="barcode-generator-form" class="card item-form">
+          <label for="barcode-gen-format">Format</label>
+          <select id="barcode-gen-format" class="category-filter">
+            <option value="code128">Code 128 (beliebiger Text, Ziffern und Buchstaben)</option>
+            <option value="ean13">EAN-13 (12 oder 13 Ziffern)</option>
+            <option value="qr">QR-Code (Text oder Link)</option>
+          </select>
+          <label for="barcode-gen-value">Inhalt</label>
+          <div class="search-row">
+            <input id="barcode-gen-value" maxlength="48" autocomplete="off" placeholder="z. B. KISTE-A-01" required>
+            <button id="barcode-gen-random" class="button button-secondary" type="button">Zufällig</button>
+          </div>
+          <label for="barcode-gen-caption">Beschriftung <span class="optional-label">(optional)</span></label>
+          <input id="barcode-gen-caption" maxlength="60" autocomplete="off" placeholder="z. B. Filament-Kiste">
+          <div class="button-row barcode-actions">
+            <button class="button button-primary" type="submit">Barcode erzeugen</button>
+            <button id="barcode-gen-svg" class="button button-secondary" type="button" disabled>SVG speichern</button>
+            <button id="barcode-gen-png" class="button button-secondary" type="button" disabled>PNG speichern</button>
+            <button id="barcode-gen-print" class="button button-secondary" type="button" disabled>Drucken</button>
+            <button id="barcode-gen-share" class="button button-secondary" type="button" disabled hidden>Teilen / an Drucker-App senden</button>
+          </div>
+          <p id="barcode-gen-message" class="form-message" role="status" aria-live="polite"></p>
+          <div id="barcode-gen-output" class="barcode-output"></div>
         </form>
       </section>
 

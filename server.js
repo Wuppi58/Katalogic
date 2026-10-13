@@ -142,7 +142,9 @@ const server = http.createServer(async (request, response) => {
     response.writeHead(200, {
       "Content-Type": contentType,
       "X-Content-Type-Options": "nosniff",
-      "Cache-Control": filePath.endsWith("service-worker.js") ? "no-cache" : "no-store"
+      "Cache-Control": filePath.endsWith("service-worker.js")
+        ? "no-cache"
+        : filePath.startsWith(path.join(ROOT, "vendor") + path.sep) ? "public, max-age=86400" : "no-store"
     });
     fs.createReadStream(filePath).pipe(response);
   });

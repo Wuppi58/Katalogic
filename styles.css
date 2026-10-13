@@ -85,6 +85,30 @@ input::placeholder { color: #a3a59c; }
 .item-form { padding: 20px 22px; }
 .item-form h3 { margin: 0 0 12px; font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif; font-size: 15px; }
 .item-form label:first-of-type { margin-top: 0; }
+.item-form input[type="file"] { height: auto; padding: 9px; }
+.photo-help { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.barcode-actions { margin-top: 14px; }
+.file-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 4px 0; }
+.file-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+.segmented { display: flex; gap: 8px; margin: 6px 0 14px; }
+.segment { flex: 1; }
+.barcode-search { margin-bottom: 16px; }
+.barcode-search .button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; text-decoration: none; }
+.file-button { display: inline-flex; align-items: center; cursor: pointer; }
+.file-input:focus-visible + .file-button { outline: 2px solid currentColor; outline-offset: 2px; }
+.file-name { min-width: 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.ocr-panel { margin: 4px 0 14px; padding: 12px; border: 1px dashed var(--line, rgba(128, 128, 128, 0.45)); border-radius: 12px; }
+.ocr-panel h3 { margin: 0 0 4px; font-size: 14px; }
+.ocr-progress { width: 100%; height: 8px; margin-top: 8px; }
+.ocr-line-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ocr-line { max-width: 100%; padding: 6px 10px; border: 1px solid var(--line, rgba(128, 128, 128, 0.45)); border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 12px; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.ocr-line:hover, .ocr-line:focus-visible { border-color: currentColor; }
+.barcode-output { margin-top: 16px; text-align: center; }
+.barcode-output svg { max-width: 100%; height: auto; border-radius: 8px; }
+.item-photo-preview { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 10px; }
+.photo-preview-entry { position: relative; }
+.photo-preview-entry img { display: block; width: 68px; height: 78px; border-radius: 8px; background: #f0f1e9; object-fit: cover; }
+.photo-preview-entry .icon-button { position: absolute; top: 2px; right: 2px; width: 25px; height: 25px; border-radius: 50%; background: rgba(20, 24, 31, .78); color: white; line-height: 1; }
 .optional-label { color: var(--muted); font-weight: 400; }
 .selected-preview { display: flex; gap: 9px; align-items: center; margin: -2px 0 13px; color: var(--green); font-size: 10px; font-weight: 600; }
 .selected-preview img { width: 38px; height: 46px; border-radius: 5px; background: #f0f1e9; object-fit: contain; }
@@ -102,6 +126,8 @@ input::placeholder { color: #a3a59c; }
 .category-group { display: grid; gap: 8px; }
 .category-heading { margin: 8px 2px 0; color: var(--green); font-size: 11px; letter-spacing: .4px; }
 .item-card { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.item-photo-gallery { display: flex; flex: 0 0 auto; gap: 6px; }
+.item-photo-gallery .item-image { object-fit: cover; }
 .item-image { width: 64px; height: 74px; flex: 0 0 64px; border-radius: 7px; background: #f0f1e9; object-fit: contain; }
 .item-copy { min-width: 0; }
 .item-copy h3 { margin: 0 0 5px; font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif; font-size: 14px; overflow-wrap: anywhere; }
@@ -307,7 +333,10 @@ footer { padding-block: 19px; background: rgba(255,255,255,.35); }
   .item-list { gap: 7px; margin-top: 8px; }
   .category-group { gap: 7px; margin-top: 5px; }
   .item-card { align-items: flex-start; gap: 8px; padding: 12px 10px; border-radius: 13px; }
+  .item-photo-gallery { display: grid; flex: 0 0 auto; grid-template-columns: repeat(3, 38px); gap: 4px; }
+  .item-photo-gallery .item-image { width: 38px; height: 48px; }
   .item-image { width: 50px; height: 62px; flex-basis: 50px; border-radius: 8px; }
+  .photo-preview-entry img { width: 58px; height: 68px; }
   .item-copy { flex: 1; }
   .item-copy h3 { margin-top: 2px; font-size: 13px; line-height: 1.35; }
   .item-copy p { font-size: 11px; line-height: 1.45; }

@@ -6,11 +6,15 @@ offline. Optional lassen sie sich über Supabase zwischen Geräten synchronisier
 oder als JSON-Datei exportieren und importieren.
 
 Die Katalogic-Startseite bietet eine Einführung und Schnellzugriffe. Über die
-Navigationsleiste gelangst du in vier getrennte Bereiche:
+Navigationsleiste gelangst du in fünf getrennte Bereiche:
 **Sammlung** zeigt gespeicherte Einträge nach Kategorie, **Suchen** prüft den
 eigenen Bestand anhand von Name, Kategorie, Notizen, Lagerort, Spieldetails
-oder Barcode,
-**Hinzufügen** bündelt Online-, Google- und manuelle Erfassung und **Sync**
+oder Barcode (auch direkt per Kamera-Scan),
+**Hinzufügen** bündelt Online-, Google- und manuelle Erfassung, **Barcode**
+erzeugt eigene Code-128-, EAN-13- und QR-Codes (EAN mit automatischer Prüfziffer,
+Download als SVG/PNG, Drucken und Teilen, komplett offline; ein Button
+**Im Internet öffnen** startet zusätzlich eine Google-Suche in einem neuen Tab,
+deren Texte du per Kopieren und Einfügen übernehmen kannst) und **Sync**
 enthält Sammlungs-ID, Datei-Sicherungen und Supabase-Synchronisation.
 
 ## Artikel erfassen und suchen
@@ -56,6 +60,25 @@ sowie Diskette 3,5 und 5,25 Zoll.
 Für jeden Eintrag kann außerdem ein optionaler, frei eingebbarer Lagerort
 gespeichert werden; er bleibt beim Bearbeiten, Suchen und Synchronisieren
 erhalten.
+Für Einträge aller Kategorien können bis zu drei JPEG-, PNG- oder WebP-Fotos
+hinzugefügt werden. Die Bilder werden beim Auswählen verkleinert und zusammen
+mit den Einträgen lokal gespeichert; sie bleiben auch in Datei-Sicherungen und
+bei der Supabase-Synchronisation enthalten.
+
+Beim Hinzufügen liest „Text aus Foto erkennen“ ein Foto von Hülle, Cover oder
+Etikett per OCR ([Tesseract.js](https://github.com/naptha/tesseract.js),
+Deutsch + Englisch) und trägt Name, Kategorie, Barcode/ISBN, Notiz (Jahr,
+USK/FSK/PEGI) sowie bei Spielen Plattform, Edition und Region in leere Felder
+ein. Erkannte Zeilen lassen sich per Tipp als Name übernehmen. Die Erkennung
+läuft komplett auf dem Gerät; die Bibliothek und die Sprachdaten (ca. 13 MB)
+liegen unter `vendor/tesseract/` und werden erst bei der ersten Nutzung geladen
+und danach offline zwischengespeichert. Die Ergebnisse sind Vorschläge und sollten
+geprüft werden.
+
+In der Kategorie „Geräte“ erscheint beim Hinzufügen und Bearbeiten das Feld
+„Zubehör“ als zwei Buttons zur Auswahl (Original-Zubehör oder Drittanbieter; ein
+erneuter Klick hebt die Auswahl auf); die Angabe wird
+in Sammlung und Bestandssuche angezeigt und ist durchsuchbar.
 
 Nach jeder Barcode- oder Produktsuche stellt Katalogic zusätzlich direkte
 Links zu Google Websuche und (bei Barcodes) Google Shopping bereit. Diese
