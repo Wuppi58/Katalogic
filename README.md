@@ -184,6 +184,25 @@ Installation als PWA ist für zuverlässigen Offline-Start empfohlen.
 Über die Schaltfläche **Hell/Dunkel** oben rechts wechselst du zwischen dem
 dunklen Grau-Blau-Lila-Design und der hellen Variante. Die Auswahl wird auf
 diesem Gerät gespeichert.
+
+## Online stellen (Netlify) und installieren
+
+Das Repository ist für Netlify vorbereitet ([netlify.toml](netlify.toml)). Die
+Produktsuche (`/api/products`) läuft dort als Netlify Function
+(`netlify/functions/products.js`); es sind keine API-Schlüssel nötig.
+
+1. Auf [app.netlify.com](https://app.netlify.com) **Add new site → Import an
+   existing project** wählen und das GitHub-Repository verbinden.
+2. Build command leer lassen, Publish directory `.` (steht schon in der
+   `netlify.toml`) und **Deploy** klicken.
+3. Die Seite über die Netlify-HTTPS-Adresse öffnen und installieren:
+   - **Android/Chrome:** Menü → „App installieren“.
+   - **iPhone/Safari:** Teilen → „Zum Home-Bildschirm“.
+   - **PC (Chrome/Edge):** Installationssymbol in der Adressleiste.
+
+Die Daten bleiben lokal im Browser dieses Geräts; jede Installation hat ihren
+eigenen Bestand (Abgleich per JSON-Sicherung oder Supabase-Sync).
+
 ## Export und Import
 
 Im Bereich **Sync** kannst du **Sammlung exportieren** wählen, um eine

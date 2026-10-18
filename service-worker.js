@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "katalogic-static-v103";
+const CACHE_NAME = "katalogic-static-v104";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -23,7 +23,11 @@ const APP_SHELL = [
   "./small-parts.js?v=small-parts-10",
   "./product-recognition.js?v=recognition-8",
   "./manifest.webmanifest",
-  "./icon.svg"
+  "./icon.svg",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png",
+  "./icons/apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (event) => {
