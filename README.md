@@ -1,7 +1,5 @@
 # Katalogic
 
-[Katalogic öffnen](https://wuppi58.github.io/Katalogic/) · Die Web-App kann in Microsoft Edge über **… → Apps → Diese Website als App installieren** installiert werden.
-
 Katalogic ist eine installierbare PWA zum Katalogisieren verschiedenster Dinge.
 Einträge werden lokal auf dem Gerät gespeichert und funktionieren dadurch auch
 offline. Optional lassen sie sich über Supabase zwischen Geräten synchronisieren
