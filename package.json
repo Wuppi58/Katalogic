@@ -1,0 +1,44 @@
+{
+  "name": "katalogic",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dein persönlicher Katalog",
+  "main": "desktop/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "44.9.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "de.katalogic.app",
+    "productName": "Katalogic",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "desktop/main.js",
+      "server.js",
+      "index.html",
+      "*.js",
+      "*.css",
+      "manifest.webmanifest",
+      "icon.svg",
+      "icons/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icons/katalogic.ico",
+      "artifactName": "Katalogic-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

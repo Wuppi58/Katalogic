@@ -93,46 +93,52 @@ async function lookupProduct(requestUrl, response) {
   }
 }
 
-const server = http.createServer((request, response) => {
-  if (request.method !== "GET") {
-    respond(response, 405, "text/plain; charset=utf-8", "Method not allowed");
-    return;
-  }
-  const requestUrl = new URL(request.url, `http://${request.headers.host || "localhost"}`);
-  if (requestUrl.pathname === "/api/products") {
-    void lookupProduct(requestUrl, response);
-    return;
-  }
-  let filePath;
-  try {
-    const pathname = decodeURIComponent(requestUrl.pathname);
-    filePath = path.resolve(ROOT, `.${pathname === "/" ? "/index.html" : pathname}`);
-  } catch {
-    respond(response, 400, "text/plain; charset=utf-8", "Invalid path");
-    return;
-  }
-  if (filePath !== ROOT && !filePath.startsWith(`${ROOT}${path.sep}`)) {
-    respond(response, 403, "text/plain; charset=utf-8", "Forbidden");
-    return;
-  }
-
-  fs.stat(filePath, (statError, stat) => {
-    if (statError || !stat.isFile()) {
-      respond(response, 404, "text/plain; charset=utf-8", "Not found");
+function createServer() {
+  return http.createServer((request, response) => {
+    if (request.method !== "GET") {
+      respond(response, 405, "text/plain; charset=utf-8", "Method not allowed");
       return;
     }
-    const contentType = MIME_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream";
-    response.writeHead(200, {
-      "Content-Type": contentType,
-      "X-Content-Type-Options": "nosniff",
-      "Cache-Control": filePath.endsWith("service-worker.js")
-        ? "no-cache"
-        : filePath.startsWith(path.join(ROOT, "vendor") + path.sep) ? "public, max-age=86400" : "no-store"
-    });
-    fs.createReadStream(filePath).pipe(response);
-  });
-});
+    const requestUrl = new URL(request.url, `http://${request.headers.host || "localhost"}`);
+    if (requestUrl.pathname === "/api/products") {
+      void lookupProduct(requestUrl, response);
+      return;
+    }
+    let filePath;
+    try {
+      const pathname = decodeURIComponent(requestUrl.pathname);
+      filePath = path.resolve(ROOT, `.${pathname === "/" ? "/index.html" : pathname}`);
+    } catch {
+      respond(response, 400, "text/plain; charset=utf-8", "Invalid path");
+      return;
+    }
+    if (filePath !== ROOT && !filePath.startsWith(`${ROOT}${path.sep}`)) {
+      respond(response, 403, "text/plain; charset=utf-8", "Forbidden");
+      return;
+    }
 
-server.listen(PORT, () => {
-  console.log(`Katalogic is available at http://localhost:${PORT}`);
-});
+    fs.stat(filePath, (statError, stat) => {
+      if (statError || !stat.isFile()) {
+        respond(response, 404, "text/plain; charset=utf-8", "Not found");
+        return;
+      }
+      const contentType = MIME_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+      response.writeHead(200, {
+        "Content-Type": contentType,
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": filePath.endsWith("service-worker.js")
+          ? "no-cache"
+          : filePath.startsWith(path.join(ROOT, "vendor") + path.sep) ? "public, max-age=86400" : "no-store"
+      });
+      fs.createReadStream(filePath).pipe(response);
+    });
+  });
+}
+
+if (require.main === module) {
+  createServer().listen(PORT, () => {
+    console.log(`Katalogic is available at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = { createServer };

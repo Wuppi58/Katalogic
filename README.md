@@ -5,6 +5,16 @@ Einträge werden lokal auf dem Gerät gespeichert und funktionieren dadurch auch
 offline. Optional lassen sie sich über Supabase zwischen Geräten synchronisieren
 oder als JSON-Datei exportieren und importieren.
 
+## Windows-Desktop-App
+
+Mit `npm install` und `npm run dist` wird unter Windows ein installierbares
+Setup-Programm in `dist/Katalogic-Setup-1.0.0.exe` erstellt. Das Setup legt
+Katalogic im Startmenü und optional auf dem Desktop ab. Die Desktop-App bündelt
+den lokalen Server; Barcode-Produktabfragen benötigen weiterhin eine
+Internetverbindung. Lokale Einträge bleiben auf dem Gerät gespeichert. Der
+Installer ist nicht digital signiert und Windows kann deshalb eine
+SmartScreen-Warnung anzeigen.
+
 Die Katalogic-Startseite bietet eine Einführung und Schnellzugriffe. Die
 Navigationsleiste bündelt die spezialisierten Bereiche **Geräte**, **Spiele**,
 **Bücher**, **Filme**, **Filamente** und **Kleinteile** im Menü **Verwaltung**. **Sammlung**
