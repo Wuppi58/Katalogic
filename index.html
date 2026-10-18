@@ -8,8 +8,24 @@
     <title>Katalogic – Dein persönlicher Katalog</title>
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="styles.css?v=ocr-6">
-    <script src="app.js?v=ocr-8" defer></script>
+    <link rel="stylesheet" href="styles.css?v=management-2">
+    <link rel="stylesheet" href="devices.css?v=devices-2">
+    <link rel="stylesheet" href="games.css?v=games-4">
+    <link rel="stylesheet" href="books.css?v=books-2">
+    <link rel="stylesheet" href="films.css?v=films-2">
+    <link rel="stylesheet" href="filaments.css?v=filaments-2">
+    <link rel="stylesheet" href="small-parts.css?v=small-parts-2">
+    <link rel="stylesheet" href="product-recognition.css?v=recognition-5">
+    <script src="pdf-export.js?v=pdf-2" defer></script>
+    <script src="chart-export.js?v=chart-2" defer></script>
+    <script src="app.js?v=management-9" defer></script>
+    <script src="devices.js?v=devices-5" defer></script>
+    <script src="games.js?v=games-6" defer></script>
+    <script src="books.js?v=books-6" defer></script>
+    <script src="films.js?v=films-4" defer></script>
+    <script src="filaments.js?v=filaments-2" defer></script>
+    <script src="small-parts.js?v=small-parts-10" defer></script>
+    <script src="product-recognition.js?v=recognition-8" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -32,9 +48,12 @@
       <button class="taskbar-link" type="button" data-view="search">
         <span class="taskbar-icon" aria-hidden="true">⌕</span><span>Suchen</span>
       </button>
-      <button class="taskbar-link" type="button" data-view="add">
-        <span class="taskbar-icon" aria-hidden="true">＋</span><span>Hinzufügen</span>
-      </button>
+      <div id="management-navigation" class="management-navigation">
+        <button id="management-toggle" class="taskbar-link management-toggle" type="button" aria-expanded="false" aria-controls="management-menu" data-management-toggle>
+          <span class="taskbar-icon" aria-hidden="true">▦</span><span>Verwaltung</span><span class="management-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div id="management-menu" class="management-menu hidden" aria-label="Verwaltungsbereiche"></div>
+      </div>
       <button class="taskbar-link" type="button" data-view="barcode">
         <span class="taskbar-icon" aria-hidden="true">▥</span><span>Barcode</span>
       </button>
@@ -50,7 +69,6 @@
         <p class="intro-copy">Eine kleine Sammlung für die Dinge, die du nicht vergessen möchtest. Lokal gespeichert, offline nutzbar und optional mit Supabase synchronisiert.</p>
         <div id="welcome-open-actions" class="welcome-actions hidden">
           <button class="button button-primary" type="button" data-view="collection">Sammlung öffnen</button>
-          <button class="button button-secondary" type="button" data-view="add">Artikel hinzufügen</button>
         </div>
       </section>
 
@@ -84,15 +102,36 @@
         <div id="empty-state" class="empty-state">
           <span class="empty-icon" aria-hidden="true">✳</span>
           <h3>Hier beginnt deine Sammlung.</h3>
-          <p>Füge deinen ersten Eintrag hinzu – er bleibt privat auf deinen Geräten.</p>
+          <p>Öffne einen Verwaltungsbereich, um Geräte, Spiele, Bücher, Filme oder Filamentrollen anzulegen.</p>
         </div>
+        <dialog id="catalog-edit-dialog" class="catalog-edit-dialog" aria-labelledby="catalog-edit-heading">
+          <form id="catalog-edit-form" class="catalog-edit-form">
+            <p class="eyebrow">BESTEHENDER EINTRAG</p>
+            <h2 id="catalog-edit-heading">Katalogeintrag bearbeiten</h2>
+            <label for="catalog-edit-name">Name</label>
+            <input id="catalog-edit-name" name="name" maxlength="200" required>
+            <label for="catalog-edit-category">Kategorie</label>
+            <select id="catalog-edit-category" name="category" required></select>
+            <label for="catalog-edit-location">Lagerort</label>
+            <input id="catalog-edit-location" name="location" maxlength="200">
+            <label for="catalog-edit-barcode">Barcode</label>
+            <input id="catalog-edit-barcode" name="barcode" maxlength="120">
+            <label for="catalog-edit-notes">Notizen</label>
+            <textarea id="catalog-edit-notes" name="notes" maxlength="5000" rows="4"></textarea>
+            <div class="button-row">
+              <button class="button button-secondary" type="button" data-catalog-edit-cancel>Abbrechen</button>
+              <button class="button button-primary" type="submit">Änderungen speichern</button>
+            </div>
+            <p id="catalog-edit-message" class="form-message" role="status" aria-live="polite"></p>
+          </form>
+        </dialog>
       </section>
 
       <section id="search-view" class="app-view hidden" aria-labelledby="library-search-heading">
         <div class="page-heading">
           <p class="eyebrow">DEIN BESTAND</p>
           <h2 id="library-search-heading">In meiner Sammlung suchen</h2>
-          <p class="muted">Prüfe Namen, Kategorien, Notizen und Barcodes deiner gespeicherten Einträge – per Eingabe oder Barcode-Scan.</p>
+          <p class="muted">Durchsuche Katalogeinträge, Geräte, Bücher, Spiele, Filme, Filamentrollen und Kleinteile – per Name, Kategorie, Barcode oder Scan.</p>
         </div>
         <form id="library-search-form" class="card library-search-form">
           <label for="library-search-query">Artikel in deiner Sammlung suchen</label>
@@ -111,288 +150,870 @@
         <div id="library-search-results" class="item-list library-search-results" aria-live="polite"></div>
       </section>
 
-      <section id="add-view" class="app-view hidden" aria-labelledby="add-page-heading">
-        <div class="page-heading">
-          <p class="eyebrow">NEU IN DEINER SAMMLUNG</p>
-          <h2 id="add-page-heading">Artikel hinzufügen</h2>
-          <p class="muted">Suche online per Barcode oder Name, nutze Google oder trage die Angaben manuell ein.</p>
+      <section id="devices-view" class="app-view hidden" aria-labelledby="devices-heading" data-management-view="devices" data-management-label="Geräte" data-management-icon="▣">
+        <div class="page-heading devices-page-heading">
+          <div>
+            <p class="eyebrow">DEIN INVENTAR</p>
+            <h2 id="devices-heading">Geräte</h2>
+            <p class="muted">Geräte, technische Daten, Zustand, Fotos und Zubehör an einem Ort verwalten. Lokal gespeichert und in JSON-Sicherungen enthalten.</p>
+          </div>
+          <div class="devices-heading-actions">
+            <button class="button button-secondary" type="button" data-recognition-category="devices">▦ Scannen / Produkt erkennen</button>
+            <button id="device-samples" class="button button-secondary" type="button">Beispieldaten laden</button>
+            <button id="device-create" class="button button-primary" type="button">＋ Gerät hinzufügen</button>
+          </div>
         </div>
-        <section id="lookup-heading" class="lookup-card card" aria-labelledby="lookup-title-heading">
-          <div class="lookup-title">
-            <div>
-              <p class="eyebrow">ONLINE ODER PER SCAN</p>
-              <h3 id="lookup-title-heading">Artikel finden</h3>
+        <section class="devices-toolbar card" aria-label="Geräte suchen und filtern">
+          <label for="device-query">Geräte durchsuchen</label>
+          <input id="device-query" type="search" autocomplete="off" placeholder="Name, Inventarnummer, Seriennummer, Modell, Standort …">
+          <div class="devices-filter-grid">
+            <label>Kategorie<select id="device-filter-category"></select></label>
+            <label>Gerätetyp<select id="device-filter-type"></select></label>
+            <label>Zustand<select id="device-filter-condition"></select></label>
+            <label>Funktionsfähigkeit<select id="device-filter-function"></select></label>
+            <label>Zubehör<select id="device-filter-accessory">
+              <option value="">Alle</option><option value="yes">Mit Zubehör</option><option value="no">Ohne Zubehör</option>
+            </select></label>
+            <label>Zubehörherkunft<select id="device-filter-origin">
+              <option value="">Alle</option><option value="original">Originalzubehör</option><option value="thirdParty">Drittanbieter</option>
+            </select></label>
+            <label>Standort<input id="device-filter-location" type="search" placeholder="Standort …"></label>
+            <label>Kaufpreis ab (€)<input id="device-filter-price-min" type="number" min="0" step="0.01"></label>
+            <label>Kaufpreis bis (€)<input id="device-filter-price-max" type="number" min="0" step="0.01"></label>
+            <label>Kaufdatum ab<input id="device-filter-date-min" type="date"></label>
+            <label>Kaufdatum bis<input id="device-filter-date-max" type="date"></label>
+            <label>Sortieren nach<select id="device-sort">
+              <option value="name">Name</option><option value="manufacturer">Hersteller</option>
+              <option value="purchaseDate">Kaufdatum</option><option value="purchasePrice">Kaufpreis</option>
+              <option value="estimatedValue">Wertschätzung</option><option value="condition">Zustand</option>
+            </select></label>
+            <label>Reihenfolge<select id="device-sort-direction"><option value="asc">Aufsteigend</option><option value="desc">Absteigend</option></select></label>
+          </div>
+          <div class="devices-toolbar-footer">
+            <p id="device-result-count" class="form-message" role="status" aria-live="polite"></p>
+            <button id="device-clear-filters" class="button button-quiet" type="button">Filter zurücksetzen</button>
+          </div>
+        </section>
+        <div id="device-cards" class="device-cards" aria-live="polite"></div>
+        <section id="device-editor" class="device-editor card hidden" aria-labelledby="device-editor-heading">
+          <div class="device-editor-heading">
+            <div><p class="eyebrow">GERÄTEDATEN</p><h3 id="device-editor-heading">Gerät hinzufügen</h3></div>
+            <button id="device-editor-close" class="icon-button" type="button" aria-label="Formular schließen">×</button>
+          </div>
+          <form id="device-form">
+            <input id="device-id" type="hidden">
+            <div class="device-form-grid">
+              <label class="device-name-field">Gerätename<input id="device-name" maxlength="120" required placeholder="z. B. Wohnzimmer-Konsole"></label>
+              <label>Hauptkategorie<select id="device-category"></select><input class="device-custom-choice hidden" data-custom-for="device-category" maxlength="100" placeholder="Eigene Hauptkategorie"></label>
+              <label>Gerätetyp<select id="device-type"></select><input class="device-custom-choice hidden" data-custom-for="device-type" maxlength="100" placeholder="Eigener Gerätetyp"></label>
+              <label>Hersteller<select id="device-manufacturer"></select><input class="device-custom-choice hidden" data-custom-for="device-manufacturer" maxlength="100" placeholder="Eigener Hersteller"></label>
+              <label>Modellreihe<select id="device-model"></select><input class="device-custom-choice hidden" data-custom-for="device-model" maxlength="120" placeholder="Eigene Modellreihe"></label>
+              <label>Genaue Modellvariante<input id="device-variant" maxlength="120" placeholder="z. B. Slim / Digital Edition"></label>
+              <label>Seriennummer<input id="device-serial" maxlength="120"></label>
+              <label>Inventarnummer<input id="device-inventory" maxlength="80"></label>
+              <label>Farbe<input id="device-color" maxlength="60"></label>
+              <label>Anzahl<input id="device-quantity" type="number" min="1" step="1" value="1"></label>
+              <label>Kaufdatum<input id="device-purchase-date" type="date"></label>
+              <label>Kaufpreis (€)<input id="device-purchase-price" type="number" min="0" step="0.01"></label>
+              <label>Händler / Bezugsquelle<input id="device-source" maxlength="160"></label>
+              <label>Aktuelle Wertschätzung (€)<input id="device-estimated-value" type="number" min="0" step="0.01"></label>
+              <label>Standort<input id="device-location" maxlength="120" placeholder="z. B. Büro, Regal 2"></label>
+              <label>Besitzer / Zuordnung<input id="device-owner" maxlength="120"></label>
+              <label>Optischer Zustand<select id="device-condition">
+                <option>Sehr gut</option><option>Schlecht</option><option>Gut</option><option>Wie neu</option>
+              </select></label>
+              <label>Funktionsfähigkeit<select id="device-function">
+                <option>Ungetestet</option><option>Voll funktionsfähig</option><option>Teilweise funktionsfähig</option><option>Defekt</option>
+              </select></label>
+              <label>Originalverpackung<select id="device-packaging"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option></select></label>
+              <label>Kaufbeleg vorhanden<select id="device-receipt"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option></select></label>
             </div>
-            <span class="lock-icon" aria-hidden="true">⌕</span>
-          </div>
-          <p class="muted">Scanne oder suche Bücher, Spiele, Geräte, Filament, Filme, Zubehör und mehr. Wähle einen Treffer aus und übernimm die Daten.</p>
-          <p id="search-provider-message" class="provider-message">Produktsuche wird geladen …</p>
-          <label for="lookup-category">Kategorie für die Suche</label>
-          <select id="lookup-category" class="category-filter lookup-category">
-            <option value="">Automatisch erkennen</option>
-            <option value="Spiele">Spiele</option>
-            <option value="Geräte">Geräte</option>
-            <option value="Filament">Filament</option>
-            <option value="Filme">Filme</option>
-            <option value="Zubehör">Zubehör</option>
-            <option value="Laser">Laser</option>
-            <option value="3D Drucker">3D Drucker</option>
-            <option value="Kleinteile">Kleinteile</option>
-            <option value="Bücher">Bücher</option>
-            <option value="Sonstiges">Sonstiges</option>
-          </select>
-          <div class="lookup-controls">
-            <form id="barcode-form" class="lookup-form">
-              <label for="barcode-query">Barcode scannen oder eingeben (EAN/UPC/ISBN)</label>
-              <div class="search-row">
-                <input id="barcode-query" inputmode="numeric" autocomplete="off" placeholder="Barcode scannen oder eingeben">
-                <button class="button button-secondary" type="submit">Suchen</button>
+            <label for="device-notes">Notizen<textarea id="device-notes" rows="3" maxlength="2000" placeholder="Weitere Informationen zum Gerät …"></textarea></label>
+
+            <fieldset class="device-section">
+              <legend>Zustand & Funktionsprüfung</legend>
+              <div class="device-form-grid">
+                <label>Mängel / Kratzer / Defekte<input id="device-defects" maxlength="500"></label>
+                <label>Reparaturen<input id="device-repairs" maxlength="500"></label>
+                <label>Prüfdatum<input id="device-inspection-date" type="date"></label>
+                <label>Besonderheiten<input id="device-condition-notes" maxlength="500"></label>
               </div>
-            </form>
-            <button id="start-scanner" class="button button-primary scan-button" type="button">▦ Kamera scannen</button>
-          </div>
-          <form id="title-search-form" class="lookup-form">
-            <label for="title-query">Name, Titel, Marke oder Modell suchen</label>
-            <div class="search-row">
-              <input id="title-query" autocomplete="off" placeholder="z. B. Spiel, Drucker, Filament, Buch …">
-              <button class="button button-secondary" type="submit">Im Internet suchen</button>
+            </fieldset>
+
+            <fieldset class="device-section">
+              <legend>Technische Daten</legend>
+              <div id="device-tech-fields" class="device-form-grid"></div>
+              <div class="device-custom-tech">
+                <div class="device-subheading"><strong>Eigene technische Daten</strong><button class="button button-secondary" id="device-add-tech" type="button">＋ Feld</button></div>
+                <div id="device-custom-tech-list" class="device-repeat-list"></div>
+              </div>
+            </fieldset>
+
+            <fieldset class="device-section">
+              <legend>Fotos & Dokumentation</legend>
+              <div class="device-photo-toolbar">
+                <label>Fotoart<select id="device-photo-kind">
+                  <option>Gesamtansicht</option><option>Typenschild / Seriennummer</option><option>Anschlüsse</option>
+                  <option>Zubehör</option><option>Schäden / Gebrauchsspuren</option><option>Verpackung</option><option>Kaufbeleg</option>
+                </select></label>
+                <label class="device-photo-input">Fotos auswählen<input id="device-photos-input" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+              </div>
+              <div id="device-photo-gallery" class="device-photo-gallery"></div>
+            </fieldset>
+
+            <fieldset class="device-section">
+              <legend>Kabel & Stromversorgung</legend>
+              <div class="device-subheading"><span>Einzeln oder gruppiert erfassen</span><button class="button button-secondary" id="device-add-cable" type="button">＋ Kabel</button></div>
+              <div id="device-cables" class="device-repeat-list"></div>
+            </fieldset>
+
+            <fieldset class="device-section">
+              <legend>Controller, Fernbedienungen & Steuergeräte</legend>
+              <label class="device-remote-toggle">Fernbedienung vorhanden<select id="device-remote"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option></select></label>
+              <div class="device-subheading"><span>Steuergeräte zuordnen</span><button class="button button-secondary" id="device-add-controller" type="button">＋ Steuergerät</button></div>
+              <div id="device-controllers" class="device-repeat-list"></div>
+            </fieldset>
+
+            <fieldset class="device-section">
+              <legend>Weiteres Zubehör</legend>
+              <div class="device-subheading"><span>Gemeinsam verwendetes Zubehör kann mehreren Geräten zugeordnet werden.</span><button class="button button-secondary" id="device-add-accessory" type="button">＋ Zubehör</button></div>
+              <div id="device-accessories" class="device-repeat-list"></div>
+            </fieldset>
+            <p id="device-form-message" class="form-message" role="status" aria-live="polite"></p>
+            <div class="button-row device-form-actions">
+              <button class="button button-primary" type="submit">Gerät speichern</button>
+              <button id="device-editor-cancel" class="button button-secondary" type="button">Abbrechen</button>
             </div>
           </form>
-          <div id="scanner-panel" class="scanner-panel hidden">
-            <video id="scanner-video" playsinline muted></video>
-            <p id="scanner-message" class="form-message" role="status" aria-live="polite"></p>
-            <button id="stop-scanner" class="button button-secondary" type="button">Kamera schließen</button>
-          </div>
-          <div id="lookup-message" class="form-message" role="status" aria-live="polite"></div>
-          <div id="lookup-results" class="lookup-results" aria-live="polite"></div>
-          <div id="google-fallback" class="google-fallback hidden">
-            <span id="google-fallback-label">Keine passenden Artikeldaten gefunden?</span>
-            <a id="google-search-link" href="https://www.google.com/" target="_blank" rel="noopener noreferrer">Bei Google suchen <span aria-hidden="true">↗</span></a>
-            <a id="google-shopping-link" class="hidden" href="https://www.google.com/" target="_blank" rel="noopener noreferrer">Google Shopping <span aria-hidden="true">↗</span></a>
-          </div>
-          <section class="google-scan-widget" aria-labelledby="google-scan-heading">
-            <div class="google-widget-heading">
-              <span class="google-g" aria-hidden="true">G</span>
-              <div>
-                <p class="eyebrow">DIREKT ZU GOOGLE</p>
-                <h3 id="google-scan-heading">Barcode scannen & suchen</h3>
-              </div>
-            </div>
-            <p class="google-widget-copy">Scanne mit der Kamera oder gib einen Barcode ein. Google öffnet sich mit dem Code in einem neuen Tab.</p>
-            <div class="google-scan-form">
-              <label for="google-barcode-query">Barcode für die Google-Suche</label>
-              <div class="search-row">
-                <input id="google-barcode-query" inputmode="numeric" autocomplete="off" placeholder="EAN, UPC oder ISBN">
-                <a id="google-widget-open" class="button button-secondary" href="https://www.google.com/search" target="_blank" rel="noopener noreferrer">Google öffnen</a>
-              </div>
-              <a id="google-widget-same-tab" class="google-same-tab-link" href="https://www.google.com/search">Falls kein neuer Tab erscheint: Google hier öffnen</a>
-            </div>
-            <button id="google-camera-scan" class="button button-primary google-camera-button" type="button">▦ Scannen & Google öffnen</button>
-            <p id="google-scan-message" class="form-message" role="status" aria-live="polite">Tipp: Auch ein USB-/Bluetooth-Scanner funktioniert im Barcode-Feld.</p>
-          </section>
         </section>
-        <form id="item-form" class="card item-form">
-          <h3 id="item-form-heading">Etwas hinzufügen</h3>
-          <div id="selected-preview" class="selected-preview hidden"></div>
-          <fieldset id="game-details" class="game-details hidden">
-            <legend>Zusätzliche Spieldetails <span class="optional-label">(optional)</span></legend>
-            <p class="game-details-help">Für Spiele ausfüllen – die Angaben lassen sich später bearbeiten.</p>
-            <div class="field-pair">
-              <div>
-                <label for="game-platform">Plattform</label>
-                <select id="game-platform" data-game-field="platform" data-has-other>
-                  <option value="">Bitte auswählen</option>
-                  <optgroup label="Nintendo">
-                    <option>Nintendo Switch</option><option>Nintendo Switch 2</option><option>Wii U</option><option>Wii</option>
-                    <option>GameCube</option><option>Nintendo 64</option><option>Super Nintendo (SNES)</option><option>NES</option>
-                    <option>Game Boy</option><option>Game Boy Color</option><option>Game Boy Advance</option><option>Nintendo DS</option>
-                    <option>Nintendo 3DS</option><option>Virtual Boy</option>
-                  </optgroup>
-                  <optgroup label="PlayStation">
-                    <option>PlayStation 5</option><option>PlayStation 4</option><option>PlayStation 3</option><option>PlayStation 2</option>
-                    <option>PlayStation</option><option>PSP</option><option>PlayStation Vita</option>
-                  </optgroup>
-                  <optgroup label="Xbox">
-                    <option>Xbox Series X|S</option><option>Xbox One</option><option>Xbox 360</option><option>Xbox</option>
-                  </optgroup>
-                  <optgroup label="Weitere">
-                    <option>PC (Windows)</option><option>Mac</option><option>Steam Deck</option><option>Sega Dreamcast</option>
-                    <option>Sega Saturn</option><option>Sega Mega Drive</option><option>Atari</option><option value="__other__">Andere …</option>
-                  </optgroup>
-                </select>
-                <input class="game-other-input hidden" data-game-other="platform" aria-label="Andere Plattform eingeben" maxlength="60" placeholder="Plattform eingeben">
-              </div>
-              <div>
-                <label for="game-edition">Edition</label>
-                <select id="game-edition" data-game-field="edition" data-has-other>
-                  <option value="">Bitte auswählen</option>
-                  <option>Standard Edition</option><option>Day One Edition</option><option>Launch Edition</option>
-                  <option>Deluxe Edition</option><option>Special Edition</option><option>Limited Edition</option>
-                  <option>Collector’s Edition</option><option>Ultimate Edition</option><option>Game of the Year Edition</option>
-                  <option>Complete Edition</option><option>Definitive Edition</option><option>Remastered</option>
-                  <option>Steelbook Edition</option><option>Platinum / Greatest Hits</option><option value="__other__">Andere …</option>
-                </select>
-                <input class="game-other-input hidden" data-game-other="edition" aria-label="Andere Edition eingeben" maxlength="80" placeholder="Edition eingeben">
-              </div>
-            </div>
-            <div class="field-pair">
-              <div>
-                <label for="game-region">Region</label>
-                <select id="game-region" data-game-field="region" data-has-other>
-                  <option value="">Bitte auswählen</option>
-                  <option>PAL (Europa)</option><option>PAL (Australien)</option><option>NTSC-U / USA</option>
-                  <option>NTSC-J / Japan</option><option>NTSC-K / Korea</option><option>China</option>
-                  <option>Worldwide / Region Free</option><option value="__other__">Andere …</option>
-                </select>
-                <input class="game-other-input hidden" data-game-other="region" aria-label="Andere Region eingeben" maxlength="40" placeholder="Region eingeben">
-              </div>
-              <div>
-                <label for="game-medium">Speichermedium</label>
-                <select id="game-medium" data-game-field="medium">
-                  <option value="">Bitte auswählen</option>
-                  <option>Cartridge / Modul</option>
-                  <option>Disc</option>
-                  <option>UMD</option>
-                  <option>Spielkarte</option>
-                  <option>Speicherkarte</option>
-                  <option>Diskette 3,5 Zoll</option>
-                  <option>Diskette 5,25 Zoll</option>
-                  <option>Download-Code</option>
-                  <option>Digital</option>
-                  <option>Sonstiges</option>
-                </select>
-              </div>
-            </div>
-            <div class="field-pair">
-              <div>
-                <label for="game-developer">Entwickler</label>
-                <input id="game-developer" data-game-field="developer" maxlength="100">
-              </div>
-              <div>
-                <label for="game-publisher">Publisher</label>
-                <input id="game-publisher" data-game-field="publisher" maxlength="100">
-              </div>
-            </div>
-            <div class="field-pair">
-              <div>
-                <label for="game-release-year">Erscheinungsjahr</label>
-                <input id="game-release-year" data-game-field="releaseYear" type="number" min="1970" max="2100" step="1" placeholder="z. B. 2024">
-              </div>
-              <div>
-                <label for="game-condition">Zustand</label>
-                <select id="game-condition" data-game-field="condition">
-                  <option value="">Bitte auswählen</option>
-                  <option>Neu / versiegelt</option>
-                  <option>Sehr gut</option>
-                  <option>Gut</option>
-                  <option>Gebrauchsspuren</option>
-                  <option>Defekt</option>
-                </select>
-              </div>
-            </div>
-            <div class="field-pair">
-              <div>
-                <label for="game-original-box">Originalhülle / Verpackung</label>
-                <select id="game-original-box" data-game-field="originalBox">
-                  <option value="">Bitte auswählen</option>
-                  <option>Ja</option>
-                  <option>Nein</option>
-                </select>
-              </div>
-              <div>
-                <label for="game-manual">Originalanleitung</label>
-                <select id="game-manual" data-game-field="manual">
-                  <option value="">Bitte auswählen</option>
-                  <option>Ja</option>
-                  <option>Nein</option>
-                </select>
-              </div>
-            </div>
-            <div class="field-pair">
-              <div>
-                <label for="game-extras">Beilagen / Extras</label>
-                <input id="game-extras" data-game-field="extras" maxlength="160" placeholder="z. B. Karte, Poster, Steelbook">
-              </div>
-              <div>
-                <label for="game-purchase-date">Kaufdatum</label>
-                <input id="game-purchase-date" data-game-field="purchaseDate" type="date">
-              </div>
-            </div>
-            <label for="game-purchase-price">Kaufpreis (€)</label>
-            <input id="game-purchase-price" data-game-field="purchasePrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="z. B. 49,99">
-          </fieldset>
-          <section class="ocr-panel" aria-labelledby="ocr-heading">
-            <h3 id="ocr-heading">Text aus Foto erkennen <span class="optional-label">(optional)</span></h3>
-            <p class="photo-help">Fotografiere die Hülle, das Cover oder das Etikett. Name, Kategorie, Barcode und weitere Eckdaten werden erkannt und in leere Felder eingetragen. Die Erkennung läuft auf deinem Gerät.</p>
-            <div class="file-picker">
-              <input id="ocr-image" class="file-input" type="file" accept="image/*" capture="environment">
-              <label for="ocr-image" class="button button-secondary file-button">Foto aufnehmen / auswählen</label>
-              <span id="ocr-file-name" class="file-name">Keine Datei ausgewählt</span>
-            </div>
-            <div class="button-row">
-              <button id="ocr-run" class="button button-secondary" type="button" disabled>Text erkennen</button>
-            </div>
-            <progress id="ocr-progress" class="ocr-progress hidden" max="100" value="0"></progress>
-            <p id="ocr-message" class="form-message" role="status" aria-live="polite"></p>
-            <div id="ocr-lines" class="ocr-lines hidden">
-              <p class="photo-help">Erkannte Zeilen – tippe eine Zeile an, um sie als Name zu übernehmen:</p>
-              <div id="ocr-line-list" class="ocr-line-list"></div>
-            </div>
-          </section>
-          <label for="item-name">Name</label>
-          <input id="item-name" name="name" maxlength="120" placeholder="Zum Beispiel: Espressomühle" required>
-          <div class="field-pair">
-            <div>
-              <label for="item-category">Kategorie</label>
-              <select id="item-category" name="category">
-                <option value="Sonstiges">Sonstiges</option>
-                <option value="Spiele">Spiele</option>
-                <option value="Geräte">Geräte</option>
-                <option value="Filament">Filament</option>
-                <option value="Filme">Filme</option>
-                <option value="Zubehör">Zubehör</option>
-                <option value="Laser">Laser</option>
-                <option value="3D Drucker">3D Drucker</option>
-                <option value="Kleinteile">Kleinteile</option>
-                <option value="Bücher">Bücher</option>
-              </select>
-            </div>
-            <div>
-              <label for="item-notes">Notiz</label>
-              <input id="item-notes" name="notes" maxlength="500" placeholder="Modell, Ort, Erinnerung …">
-            </div>
-          </div>
-          <div id="accessory-field" class="hidden">
-            <span id="accessory-label">Zubehör <span class="optional-label">(optional)</span></span>
-            <input id="accessory-type" name="accessoryType" type="hidden" value="">
-            <div class="segmented" role="group" aria-labelledby="accessory-label">
-              <button type="button" class="button button-secondary segment" data-accessory="original" aria-pressed="false">Original-Zubehör</button>
-              <button type="button" class="button button-secondary segment" data-accessory="thirdParty" aria-pressed="false">Drittanbieter</button>
-            </div>
-          </div>
-          <label for="item-location">Lagerort <span class="optional-label">(optional)</span></label>
-          <input id="item-location" name="location" maxlength="120" autocomplete="off" placeholder="z. B. Regal 2, Kiste A, Schrank im Büro">
-          <label for="item-photos">Fotos <span class="optional-label">(optional, maximal 3)</span></label>
-          <div class="file-picker">
-            <input id="item-photos" class="file-input" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
-            <label for="item-photos" class="button button-secondary file-button">Fotos auswählen</label>
-            <span id="item-photos-name" class="file-name">Keine Fotos ausgewählt</span>
-          </div>
-          <p class="photo-help">Fotos werden verkleinert und mit dem Eintrag gespeichert.</p>
-          <div id="item-photo-preview" class="item-photo-preview" aria-live="polite"></div>
-          <p id="photo-message" class="form-message" role="status" aria-live="polite"></p>
-          <button id="game-details-toggle" class="button button-secondary game-details-toggle hidden" type="button" aria-expanded="false" aria-controls="game-details">
-            Spieldetails öffnen
-          </button>
-          <label for="item-barcode">Barcode / ISBN <span class="optional-label">(optional)</span></label>
-          <input id="item-barcode" name="barcode" maxlength="32" inputmode="numeric" placeholder="EAN, UPC oder ISBN">
-          <div class="button-row">
-            <button id="save-item" class="button button-primary" type="submit">Eintrag speichern</button>
-            <button id="cancel-edit" class="button button-secondary hidden" type="button">Abbrechen</button>
-          </div>
-        </form>
+        <section id="device-detail" class="device-detail card hidden" aria-labelledby="device-detail-heading"></section>
+        <details class="device-settings card">
+          <summary>Pflichtfelder festlegen <span class="optional-label">(Gerätename ist immer erforderlich)</span></summary>
+          <div id="device-required-fields" class="device-required-fields"></div>
+        </details>
       </section>
 
+      <section id="games-view" class="app-view hidden" aria-labelledby="games-heading" data-management-view="games" data-management-label="Spiele" data-management-icon="♟">
+        <div class="page-heading games-page-heading">
+          <div>
+            <p class="eyebrow">DEINE SPIELESAMMLUNG</p>
+            <h2 id="games-heading">Spiele</h2>
+            <p class="muted">Videospiele, Brettspiele, Karten, Rollenspiele und Zubehör verwalten. Lokal gespeichert und in JSON-Sicherungen enthalten.</p>
+          </div>
+          <div class="games-heading-actions">
+            <button class="button button-secondary" type="button" data-recognition-category="games">▦ Scannen / Produkt erkennen</button>
+            <button id="game-create" class="button button-primary" type="button">＋ Spiel hinzufügen</button>
+          </div>
+        </div>
+        <div id="game-category-tabs" class="game-category-tabs" role="tablist" aria-label="Spielkategorien"></div>
+        <section class="games-toolbar card" aria-label="Spiele suchen und filtern">
+          <div class="game-scan-row">
+            <label for="game-query">Spiele durchsuchen</label>
+            <button id="game-start-scanner" class="button button-secondary" type="button">▦ Barcode scannen</button>
+          </div>
+          <input id="game-query" type="search" autocomplete="off" placeholder="Name, Plattform, Genre, Verlag, EAN / ISBN …">
+          <div id="game-scanner-panel" class="scanner-panel hidden">
+            <video id="game-scanner-video" playsinline muted></video>
+            <p id="game-scanner-message" class="form-message" role="status" aria-live="polite"></p>
+            <button id="game-stop-scanner" class="button button-secondary" type="button">Kamera schließen</button>
+          </div>
+          <div class="games-filter-grid">
+            <label>Spielart<select id="game-filter-type"></select></label>
+            <label>Plattform / System<input id="game-filter-platform" type="search" placeholder="Plattform …"></label>
+            <label>Zustand<select id="game-filter-condition"></select></label>
+            <label>Funktionsfähigkeit<select id="game-filter-function"></select></label>
+            <label>Vollständigkeit<select id="game-filter-completeness"></select></label>
+            <label>Kaufpreis ab (€)<input id="game-filter-price-min" type="number" min="0" step="0.01"></label>
+            <label>Kaufpreis bis (€)<input id="game-filter-price-max" type="number" min="0" step="0.01"></label>
+            <label>Sortieren nach<select id="game-sort">
+              <option value="name">Name</option><option value="platform">Plattform</option>
+              <option value="releaseDate">Erscheinungsdatum</option><option value="purchaseDate">Kaufdatum</option>
+              <option value="purchasePrice">Kaufpreis</option><option value="estimatedValue">Wertschätzung</option>
+              <option value="condition">Zustand</option>
+            </select></label>
+            <label>Reihenfolge<select id="game-sort-direction"><option value="asc">Aufsteigend</option><option value="desc">Absteigend</option></select></label>
+          </div>
+          <div class="games-toolbar-footer">
+            <p id="game-result-count" class="form-message" role="status" aria-live="polite"></p>
+            <div class="button-row">
+              <button id="game-view-grid" class="button button-quiet" type="button" aria-pressed="true">Kachelansicht</button>
+              <button id="game-view-list" class="button button-quiet" type="button" aria-pressed="false">Listenansicht</button>
+              <button id="game-clear-filters" class="button button-quiet" type="button">Filter zurücksetzen</button>
+            </div>
+          </div>
+        </section>
+        <div id="game-cards" class="game-cards" aria-live="polite"></div>
+        <section id="game-editor" class="game-editor card hidden" aria-labelledby="game-editor-heading">
+          <div class="game-editor-heading">
+            <div><p class="eyebrow">SPIELEDATEN</p><h3 id="game-editor-heading">Spiel hinzufügen</h3></div>
+            <button id="game-editor-close" class="icon-button" type="button" aria-label="Formular schließen">×</button>
+          </div>
+          <form id="game-form" class="game-form">
+            <input id="game-id" type="hidden">
+            <fieldset class="game-section">
+              <legend>Stammdaten</legend>
+              <div class="game-form-grid">
+                <label class="game-name-field">Spielname<input id="game-name" maxlength="160" required placeholder="z. B. The Legend of Zelda: Tears of the Kingdom"></label>
+                <label>Untertitel / Edition<input id="game-subtitle" maxlength="160"></label>
+                <label>Spielkategorie<select id="game-category"></select><input data-game-custom="category" class="game-custom-choice hidden" maxlength="100" placeholder="Eigene Kategorie"></label>
+                <label>Spielart<select id="game-type"></select><input data-game-custom="type" class="game-custom-choice hidden" maxlength="100" placeholder="Eigene Spielart"></label>
+                <label>Plattform / Spielsystem<input id="inventory-game-platform" list="game-platform-options" maxlength="120" placeholder="z. B. Nintendo Switch, D&D 5e"><datalist id="game-platform-options"></datalist></label>
+                <label>Hersteller / Entwickler<input id="inventory-game-developer" list="game-developer-options" maxlength="140"><datalist id="game-developer-options"></datalist></label>
+                <label>Herausgeber / Verlag<input id="inventory-game-publisher" list="game-publisher-options" maxlength="140"><datalist id="game-publisher-options"></datalist></label>
+                <label>Genre<input id="game-genre" list="game-genre-options" maxlength="100"><datalist id="game-genre-options"></datalist></label>
+                <label>Sprache<input id="game-language" list="game-language-options" maxlength="80"><datalist id="game-language-options"></datalist></label>
+                <label>Region / Edition<input id="inventory-game-region" maxlength="100"></label>
+                <label>Erscheinungsdatum<input id="game-release-date" type="date"></label>
+                <label>EAN / ISBN / Produktnummer<input id="game-barcode" maxlength="40" inputmode="numeric"></label>
+                <label>Artikelnummer<input id="game-sku" maxlength="80"></label>
+                <label>Anzahl Exemplare<input id="game-quantity" type="number" min="1" step="1" value="1"></label>
+              </div>
+              <label for="game-description">Beschreibung / persönliche Notizen<textarea id="game-description" rows="3" maxlength="2000"></textarea></label>
+            </fieldset>
+            <fieldset class="game-section">
+              <legend>Sammlung, Zustand & Kauf</legend>
+              <div class="game-form-grid">
+                <label>Zustand<select id="inventory-game-condition"></select></label>
+                <label>Funktionsfähigkeit<select id="game-functionality"></select></label>
+                <label>Vollständigkeit<select id="game-completeness"></select></label>
+                <label>Kaufdatum<input id="inventory-game-purchase-date" type="date"></label>
+                <label>Kaufpreis (€)<input id="inventory-game-purchase-price" type="number" min="0" step="0.01"></label>
+                <label>Geschätzter aktueller Wert (€)<input id="game-estimated-value" type="number" min="0" step="0.01"></label>
+                <label>Kaufort / Händler<input id="game-source" maxlength="160"></label>
+                <label>Standort in der Sammlung<input id="game-location" maxlength="140" placeholder="z. B. Regal 2, Box A"></label>
+                <label>Datenträgerzustand<input id="game-media-condition" maxlength="120"></label>
+                <label>Hülle / Verpackung<select id="game-packaging"><option value="">Nicht angegeben</option><option>Vorhanden</option><option>Fehlt</option></select></label>
+                <label>Anleitung<select id="inventory-game-manual"><option value="">Nicht angegeben</option><option>Vorhanden</option><option>Fehlt</option></select></label>
+              </div>
+            </fieldset>
+            <fieldset class="game-section">
+              <legend>Spielartspezifische Daten</legend>
+              <div id="game-specific-fields" class="game-form-grid"></div>
+              <div class="game-custom-fields">
+                <div class="game-subheading"><strong>Eigene Datenfelder</strong><button id="game-add-custom-field" class="button button-secondary" type="button">＋ Feld</button></div>
+                <div id="game-custom-field-list" class="game-repeat-list"></div>
+              </div>
+            </fieldset>
+            <fieldset class="game-section">
+              <legend>Cover & Galerie</legend>
+              <label class="game-photo-input button button-secondary" for="game-photos-input">＋ Bilder auswählen<input id="game-photos-input" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+              <p class="photo-help">Bis zu acht Bilder je Spiel; Fotos werden verkleinert und lokal gespeichert.</p>
+              <div id="game-photo-gallery" class="game-photo-gallery"></div>
+            </fieldset>
+            <fieldset class="game-section">
+              <legend>Zubehör & Erweiterungen</legend>
+              <div class="game-subheading"><span>Zubehör kann auch mehreren Spielen zugeordnet werden.</span><button id="game-add-accessory" class="button button-secondary" type="button">＋ Zubehör</button></div>
+              <div id="game-accessories" class="game-repeat-list"></div>
+            </fieldset>
+            <p id="game-form-message" class="form-message" role="status" aria-live="polite"></p>
+            <div class="button-row game-form-actions">
+              <button class="button button-primary" type="submit">Spiel speichern</button>
+              <button id="game-editor-cancel" class="button button-secondary" type="button">Abbrechen</button>
+            </div>
+          </form>
+        </section>
+        <section id="game-detail" class="game-detail card hidden" aria-labelledby="game-detail-heading"></section>
+        <details class="game-settings card">
+          <summary>Eigene Auswahlwerte verwalten</summary>
+          <div class="game-settings-grid">
+            <div><label for="game-new-category">Neue Kategorie</label><input id="game-new-category" maxlength="100"><button id="game-save-category" class="button button-secondary" type="button">Kategorie ergänzen</button></div>
+            <div><label for="game-new-type">Neue Spielart</label><input id="game-new-type" maxlength="100"><button id="game-save-type" class="button button-secondary" type="button">Spielart ergänzen</button></div>
+            <div><label for="game-new-platform">Neue Plattform / Spielsystem</label><input id="game-new-platform" maxlength="120"><button id="game-save-platform" class="button button-secondary" type="button">Plattform ergänzen</button></div>
+          </div>
+        </details>
+      </section>
+
+      <section id="books-view" class="app-view hidden" aria-labelledby="books-heading" data-management-view="books" data-management-label="Bücher" data-management-icon="▤">
+        <div class="page-heading books-page-heading">
+          <div>
+            <p class="eyebrow">DEINE BIBLIOTHEK</p>
+            <h2 id="books-heading">Bücher</h2>
+            <p class="muted">Gedruckte Bücher, E-Books, Hörbücher, Comics und Ausleihen verwalten. Lokal gespeichert und in JSON-Sicherungen enthalten.</p>
+          </div>
+          <div class="books-heading-actions">
+            <button class="button button-secondary" type="button" data-recognition-category="books">▦ Scannen / Produkt erkennen</button>
+            <button id="book-create" class="button button-primary" type="button">＋ Buch hinzufügen</button>
+          </div>
+        </div>
+        <div id="book-category-tabs" class="book-category-tabs" role="tablist" aria-label="Buchkategorien"></div>
+        <section class="books-toolbar card" aria-label="Bücher suchen und filtern">
+          <label for="book-query">Bücher durchsuchen</label>
+          <input id="book-query" type="search" autocomplete="off" placeholder="Titel, Autor, ISBN, Verlag, Reihe, Standort …">
+          <div class="books-filter-grid">
+            <label>Kategorie<select id="book-filter-category"></select></label>
+            <label>Genre<input id="book-filter-genre" type="search" placeholder="Genre …"></label>
+            <label>Sprache<select id="book-filter-language"></select></label>
+            <label>Format<select id="book-filter-format"></select></label>
+            <label>Zustand<select id="book-filter-condition"></select></label>
+            <label>Lesestatus<select id="book-filter-reading-status"></select></label>
+            <label>Sortieren nach<select id="book-sort">
+              <option value="title">Titel</option><option value="author">Autor</option>
+              <option value="year">Erscheinungsjahr</option><option value="purchaseDate">Kaufdatum</option>
+              <option value="estimatedValue">Wert</option>
+            </select></label>
+            <label>Reihenfolge<select id="book-sort-direction"><option value="asc">Aufsteigend</option><option value="desc">Absteigend</option></select></label>
+          </div>
+          <div class="books-toolbar-footer">
+            <p id="book-result-count" class="form-message" role="status" aria-live="polite"></p>
+            <div class="button-row">
+              <button id="book-view-grid" class="button button-quiet" type="button" aria-pressed="true">Kachelansicht</button>
+              <button id="book-view-list" class="button button-quiet" type="button" aria-pressed="false">Listenansicht</button>
+              <button id="book-clear-filters" class="button button-quiet" type="button">Filter zurücksetzen</button>
+            </div>
+          </div>
+        </section>
+        <div id="book-cards" class="book-cards" aria-live="polite"></div>
+        <section id="book-editor" class="book-editor card hidden" aria-labelledby="book-editor-heading">
+          <div class="book-editor-heading">
+            <div><p class="eyebrow">BUCHDATEN</p><h3 id="book-editor-heading">Buch hinzufügen</h3></div>
+            <button id="book-editor-close" class="icon-button" type="button" aria-label="Formular schließen">×</button>
+          </div>
+          <form id="book-form" class="book-form">
+            <input id="book-id" type="hidden">
+            <fieldset class="book-section">
+              <legend>Werk & Ausgabe</legend>
+              <div class="book-form-grid">
+                <label class="book-title-field">Titel<input id="book-title" maxlength="200" required></label>
+                <label>Untertitel<input id="book-subtitle" maxlength="200"></label>
+                <label>Autor(en)<input id="book-authors" list="book-author-options" maxlength="500" placeholder="Mehrere mit Semikolon trennen"><datalist id="book-author-options"></datalist></label>
+                <label>Herausgeber<input id="book-editor-name" maxlength="160"></label>
+                <label>Verlag<input id="book-publisher" list="book-publisher-options" maxlength="160"><datalist id="book-publisher-options"></datalist></label>
+                <label>Erscheinungsjahr<input id="book-year" type="number" min="1000" max="2100" step="1"></label>
+                <label>Erscheinungsdatum<input id="book-publish-date" type="date"></label>
+                <label>Auflage<input id="book-edition" maxlength="100"></label>
+                <label>Reihe / Serie<select id="book-series"></select><input id="book-new-series" class="book-custom-input hidden" maxlength="160" placeholder="Neue Reihe"></label>
+                <label>Bandnummer<input id="book-volume" maxlength="50"></label>
+                <label>Kategorie<select id="book-category"></select><input id="book-new-category" class="book-custom-input hidden" maxlength="120" placeholder="Eigene Kategorie"></label>
+                <label>Unterkategorie<input id="book-subcategory" list="book-subcategory-options" maxlength="120"><datalist id="book-subcategory-options"></datalist></label>
+                <label>Genre<input id="book-genre" list="book-genre-options" maxlength="120"><datalist id="book-genre-options"></datalist></label>
+                <label>Format<select id="book-format">
+                  <option value="Gedrucktes Buch">Gedrucktes Buch</option><option value="E-Book">E-Book</option>
+                  <option value="Hörbuch">Hörbuch</option><option value="Comic">Comic</option>
+                  <option value="Manga">Manga</option><option value="Zeitschrift / Magazin">Zeitschrift / Magazin</option>
+                  <option value="Sonstiges">Sonstiges</option>
+                </select></label>
+                <label data-visible-formats="Gedrucktes Buch">Einbandart<input id="book-binding" maxlength="100" placeholder="z. B. Hardcover, Taschenbuch"></label>
+                <label>ISBN-10<input id="book-isbn10" maxlength="17" inputmode="text" autocomplete="off"></label>
+                <label>ISBN-13<input id="book-isbn13" maxlength="20" inputmode="numeric" autocomplete="off"></label>
+                <label>EAN<input id="book-ean" maxlength="20" inputmode="numeric"></label>
+                <label>Sprache<input id="book-language" list="book-language-options" maxlength="80"><datalist id="book-language-options"></datalist></label>
+                <label>Originalsprache<input id="book-original-language" maxlength="80"></label>
+                <label data-visible-formats="Gedrucktes Buch|Comic|Manga">Seitenzahl<input id="book-pages" type="number" min="1" max="100000" step="1"></label>
+                <label>Übersetzer<input id="book-translator" maxlength="160"></label>
+                <label>Illustrator<input id="book-illustrator" maxlength="160"></label>
+                <label>Verwandte Werke<select id="book-related" multiple size="3" aria-describedby="book-related-hint"></select></label>
+              </div>
+              <p id="book-related-hint" class="field-hint">Strg (Windows) bzw. Cmd (Mac) gedrückt halten, um mehrere Werke auszuwählen.</p>
+              <label>Klappentext<textarea id="book-blurb" rows="3" maxlength="3000"></textarea></label>
+              <label>Eigene Beschreibung / Notizen<textarea id="book-notes" rows="3" maxlength="3000"></textarea></label>
+            </fieldset>
+            <fieldset class="book-section">
+              <legend>Formatdetails</legend>
+              <div class="book-format-fields" data-book-format="Gedrucktes Buch">
+                <label>Zustand des Einbands<input data-detail="coverCondition" maxlength="120"></label>
+                <label>Zustand der Seiten<input data-detail="pageCondition" maxlength="120"></label>
+                <label>Schutzumschlag<select data-detail="dustJacket"><option value="">Nicht angegeben</option><option>Vorhanden</option><option>Fehlt</option></select></label>
+                <label>Signiert<select data-detail="signed"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option></select></label>
+                <label>Widmung vorhanden<select data-detail="dedication"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option></select></label>
+                <label>Sammlerausgabe / limitiert<select data-detail="limited"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option></select></label>
+              </div>
+              <div class="book-format-fields hidden" data-book-format="E-Book">
+                <label>Dateiformat<input data-detail="fileFormat" maxlength="60" placeholder="EPUB, PDF, AZW …"></label>
+                <label>Plattform / Shop<input data-detail="platform" maxlength="120"></label>
+                <label>Bezug<select data-detail="acquisition"><option value="">Nicht angegeben</option><option>Digital gekauft</option><option>Kostenloser Download</option><option>Ausgeliehen</option></select></label>
+                <label>DRM-Status<select data-detail="drm"><option value="">Unbekannt</option><option>DRM-frei</option><option>DRM-geschützt</option><option>Unbekannt</option></select></label>
+                <label>Speicherort / Bibliotheksverweis<input data-detail="digitalLocation" maxlength="240"></label>
+              </div>
+              <div class="book-format-fields hidden" data-book-format="Hörbuch">
+                <label>Sprecher<input data-detail="narrator" maxlength="180"></label>
+                <label>Laufzeit (Minuten)<input data-detail="runtimeMinutes" type="number" min="1" max="100000" step="1"></label>
+                <label>Medium<select data-detail="audioMedium"><option value="">Nicht angegeben</option><option>CD</option><option>Download</option><option>Streaming</option></select></label>
+                <label>Anzahl CDs / Dateien<input data-detail="audioParts" type="number" min="1" max="10000" step="1"></label>
+                <label>Fassung<select data-detail="audioVersion"><option value="">Nicht angegeben</option><option>Ungekürzt</option><option>Gekürzt</option><option>Unbekannt</option></select></label>
+              </div>
+              <div class="book-format-fields hidden" data-book-format="Comic">
+                <label>Ausgabe<input data-detail="issue" maxlength="100"></label>
+                <label>Leserichtung<select data-detail="readingDirection"><option value="">Nicht angegeben</option><option>Links nach rechts</option><option>Rechts nach links</option></select></label>
+                <label>Sonderausgabe<input data-detail="specialEdition" maxlength="160"></label>
+                <label>Zustand Cover<input data-detail="coverCondition" maxlength="120"></label>
+                <label>Zustand Seiten<input data-detail="pageCondition" maxlength="120"></label>
+              </div>
+              <div class="book-format-fields hidden" data-book-format="Manga">
+                <label>Ausgabe<input data-detail="issue" maxlength="100"></label>
+                <label>Leserichtung<select data-detail="readingDirection"><option value="">Nicht angegeben</option><option>Links nach rechts</option><option>Rechts nach links</option></select></label>
+                <label>Sonderausgabe<input data-detail="specialEdition" maxlength="160"></label>
+                <label>Zustand Cover<input data-detail="coverCondition" maxlength="120"></label>
+                <label>Zustand Seiten<input data-detail="pageCondition" maxlength="120"></label>
+              </div>
+            </fieldset>
+            <fieldset class="book-section">
+              <legend>Sammlung, Zustand & Ausleihe</legend>
+              <div class="book-form-grid">
+                <label>Zustand<select id="book-condition"></select></label>
+                <label>Lesestatus<select id="book-reading-status"></select></label>
+                <label>Bewertung (1–5)<input id="book-rating" type="number" min="1" max="5" step="1"></label>
+                <label>Anzahl Exemplare<input id="book-quantity" type="number" min="1" max="100000" step="1" value="1"></label>
+                <label>Standort im Regal / Lager<input id="book-location" maxlength="180" placeholder="z. B. Regal 2, Fach A"></label>
+                <label>Kaufdatum<input id="book-purchase-date" type="date"></label>
+                <label>Kaufpreis (€)<input id="book-purchase-price" type="number" min="0" step="0.01"></label>
+                <label>Geschätzter aktueller Wert (€)<input id="book-estimated-value" type="number" min="0" step="0.01"></label>
+                <label>Kaufort / Händler<input id="book-source" maxlength="180"></label>
+                <label>Rezension<textarea id="book-review" rows="2" maxlength="2000"></textarea></label>
+              </div>
+              <div id="book-loan-fields" class="book-form-grid hidden">
+                <label>Verliehen an<input id="book-borrower" maxlength="160"></label>
+                <label>Verliehen am<input id="book-loan-date" type="date"></label>
+                <label>Rückgabe erwartet am<input id="book-due-date" type="date"></label>
+                <label>Tatsächlich zurückgegeben am<input id="book-return-date" type="date"></label>
+              </div>
+            </fieldset>
+            <fieldset class="book-section">
+              <legend>Cover & weitere Fotos</legend>
+              <label class="book-photo-input">Bilder auswählen<input id="book-photos-input" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+              <p class="photo-help">Bis zu acht verkleinerte Bilder je Buch; sie werden lokal gespeichert.</p>
+              <div id="book-photo-gallery" class="book-photo-gallery"></div>
+            </fieldset>
+            <p id="book-form-message" class="form-message" role="status" aria-live="polite"></p>
+            <div class="button-row book-form-actions">
+              <button class="button button-primary" type="submit">Buch speichern</button>
+              <button id="book-editor-cancel" class="button button-secondary" type="button">Abbrechen</button>
+            </div>
+          </form>
+        </section>
+        <section id="book-detail" class="book-detail card hidden" aria-labelledby="book-detail-heading"></section>
+        <details class="book-settings card">
+          <summary>Eigene Kategorien und Genres verwalten</summary>
+          <div class="book-settings-grid">
+            <label>Neue Kategorie<input id="book-add-category" maxlength="120"></label>
+            <button id="book-save-category" class="button button-secondary" type="button">Kategorie ergänzen</button>
+            <label>Neues Genre<input id="book-add-genre" maxlength="120"></label>
+            <button id="book-save-genre" class="button button-secondary" type="button">Genre ergänzen</button>
+          </div>
+        </details>
+      </section>
+
+      <section id="films-view" class="app-view hidden" aria-labelledby="films-heading" data-management-view="films" data-management-label="Filme" data-management-icon="▣">
+        <div class="page-heading films-page-heading">
+          <div>
+            <p class="eyebrow">DEINE MEDIENSAMMLUNG</p>
+            <h2 id="films-heading">Filme & Serien</h2>
+            <p class="muted">Filme, Editionen, Staffeln und Sammlungen verwalten. Lokal gespeichert und in JSON-Sicherungen enthalten.</p>
+          </div>
+          <div class="films-heading-actions">
+            <button class="button button-secondary" type="button" data-recognition-category="films">▦ Scannen / Produkt erkennen</button>
+            <button id="film-create" class="button button-primary" type="button">＋ Medium hinzufügen</button>
+          </div>
+        </div>
+        <div id="film-category-tabs" class="film-category-tabs" role="tablist" aria-label="Medienkategorien"></div>
+        <section class="films-toolbar card" aria-label="Medien suchen und filtern">
+          <label for="film-query">Filme und Serien durchsuchen</label>
+          <input id="film-query" type="search" autocomplete="off" placeholder="Titel, Darsteller, Regisseur, Franchise, EAN …">
+          <div class="films-filter-grid">
+            <label>Format<select id="film-filter-format"></select></label>
+            <label>Zustand<select id="film-filter-condition"></select></label>
+            <label>Genre<input id="film-filter-genre" type="search" placeholder="Genre …"></label>
+            <label>Erscheinungsjahr<input id="film-filter-year" type="number" min="1880" max="2200" placeholder="Jahr"></label>
+            <label>Altersfreigabe<select id="film-filter-rating"></select></label>
+            <label>Sortieren nach<select id="film-sort"><option value="title">Titel</option><option value="year">Jahr</option><option value="purchaseDate">Kaufdatum</option><option value="estimatedValue">Wert</option></select></label>
+            <label>Reihenfolge<select id="film-sort-direction"><option value="asc">Aufsteigend</option><option value="desc">Absteigend</option></select></label>
+          </div>
+          <div class="films-toolbar-footer">
+            <p id="film-result-count" class="form-message" role="status" aria-live="polite"></p>
+            <div class="button-row">
+              <button id="film-view-grid" class="button button-quiet" type="button" aria-pressed="true">Kachelansicht</button>
+              <button id="film-view-list" class="button button-quiet" type="button" aria-pressed="false">Listenansicht</button>
+              <button id="film-clear-filters" class="button button-quiet" type="button">Filter zurücksetzen</button>
+            </div>
+          </div>
+        </section>
+        <div id="film-cards" class="film-cards" aria-live="polite"></div>
+        <section id="film-editor" class="film-editor card hidden" aria-labelledby="film-editor-heading">
+          <div class="film-editor-heading">
+            <div><p class="eyebrow">MEDIENDATEN</p><h3 id="film-editor-heading">Medium hinzufügen</h3></div>
+            <button id="film-editor-close" class="icon-button" type="button" aria-label="Formular schließen">×</button>
+          </div>
+          <form id="film-form" class="film-form">
+            <input id="film-id" type="hidden">
+            <fieldset class="film-section">
+              <legend>Werk & Veröffentlichung</legend>
+              <div class="film-form-grid">
+                <label class="film-title-field">Titel<input id="film-title" maxlength="200" required></label>
+                <label>Originaltitel<input id="film-original-title" maxlength="200"></label>
+                <label>Alternativtitel<input id="film-alternate-title" maxlength="240"></label>
+                <label>Medienkategorie<select id="film-category"></select><input id="film-custom-category" class="film-custom-input hidden" maxlength="120" placeholder="Eigene Kategorie"></label>
+                <label>Medienart<select id="film-kind"><option>Spielfilm</option><option>Kurzfilm</option><option>Dokumentation</option><option>Animationsfilm</option><option>Anime</option><option>Serie</option><option>Miniserie</option><option>TV-Film</option><option>Konzertfilm</option><option>Stand-up und Comedy</option><option>Lehr- und Schulfilm</option><option>Sammleredition</option><option>Filmreihe und Franchise</option><option>Sonstige Videomedien</option></select></label>
+                <label>Genre<input id="film-genre" list="film-genre-options" maxlength="140"><datalist id="film-genre-options"></datalist></label>
+                <label>Erscheinungsjahr<input id="film-year" type="number" min="1880" max="2200"></label>
+                <label>Veröffentlichungsdatum<input id="film-release-date" type="date"></label>
+                <label>Regisseur(en)<input id="film-directors" list="film-director-options" maxlength="300" placeholder="Mehrere mit Semikolon trennen"><datalist id="film-director-options"></datalist></label>
+                <label>Darsteller<input id="film-cast" maxlength="700" placeholder="Mehrere mit Semikolon trennen"></label>
+                <label>Drehbuchautor(en)<input id="film-writers" maxlength="400" placeholder="Mehrere mit Semikolon trennen"></label>
+                <label>Produzent(en)<input id="film-producers" maxlength="400" placeholder="Mehrere mit Semikolon trennen"></label>
+                <label>Produktionsstudio<input id="film-studio" maxlength="180"></label>
+                <label>Verleih / Publisher<input id="film-publisher" list="film-publisher-options" maxlength="180"><datalist id="film-publisher-options"></datalist></label>
+                <label>Herkunftsland<input id="film-country" maxlength="120" placeholder="Mehrere Länder möglich"></label>
+                <label>Sprache<input id="film-language" maxlength="100"></label>
+                <label>Originalsprache<input id="film-original-language" maxlength="100"></label>
+                <label>Laufzeit (Minuten)<input id="film-runtime" type="number" min="1" max="100000"></label>
+                <label>Altersfreigabe<select id="film-rating"><option value="">Nicht angegeben</option><option>FSK 0</option><option>FSK 6</option><option>FSK 12</option><option>FSK 16</option><option>FSK 18</option><option>Keine Jugendfreigabe</option><option>Unbekannt</option></select></label>
+                <label>Filmreihe / Franchise<input id="film-franchise" list="film-franchise-options" maxlength="180"><datalist id="film-franchise-options"></datalist></label>
+                <label>Teilnummer<input id="film-part" maxlength="60"></label>
+                <label>Edition<input id="film-edition" maxlength="180"></label>
+                <label>EAN / Produktnummer<input id="film-barcode" maxlength="40"></label>
+                <label>Verwandte Filme / Boxset-Inhalte<select id="film-related" multiple size="3"></select></label>
+              </div>
+              <label>Inhaltsangabe<textarea id="film-synopsis" rows="3" maxlength="3000"></textarea></label>
+              <label>Persönliche Notizen<textarea id="film-notes" rows="2" maxlength="2000"></textarea></label>
+            </fieldset>
+            <fieldset class="film-section">
+              <legend>Format & Ausgabe</legend>
+              <div class="film-form-grid">
+                <label>Format<select id="film-format"><option>DVD</option><option>Blu-ray</option><option>3D-Blu-ray</option><option>4K Ultra HD</option><option>Digitaler Film</option><option>Streaming</option><option>VHS</option><option>Sonstiges</option></select></label>
+                <label>Zustand<select id="film-condition"></select></label>
+                <label>Wiedergabefunktion<select id="film-functionality"></select></label>
+                <label>Vollständigkeit<select id="film-completeness"></select></label>
+                <label>Disc-Zustand<input data-film-detail="discCondition" maxlength="120"></label>
+                <label>Kratzer vorhanden<select data-film-detail="scratches"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option></select></label>
+                <label>Hüllenzustand<input data-film-detail="caseCondition" maxlength="120"></label>
+                <label>Booklet vorhanden<select data-film-detail="booklet"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option></select></label>
+                <label>Verpackung vollständig<select data-film-detail="packagingComplete"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option></select></label>
+                <label>Fehlende Discs / Extras<input data-film-detail="missingItems" maxlength="300"></label>
+                <label>Anzahl Exemplare<input id="film-quantity" type="number" min="1" max="10000" value="1"></label>
+              </div>
+              <div class="film-format-fields" data-film-format="DVD">
+                <label>DVD-Standard / Ausgabe<input data-film-detail="dvdStandard" maxlength="120"></label><label>Regionalcode<input data-film-detail="regionCode" maxlength="50"></label>
+                <label>Anzahl Discs<input data-film-detail="discCount" type="number" min="1" max="1000"></label><label>Bildformat<input data-film-detail="aspectRatio" maxlength="80"></label>
+                <label>Tonformate<input data-film-detail="audioFormats" maxlength="240"></label><label>Extras<input data-film-detail="extras" maxlength="400"></label>
+                <label>Hülle<select data-film-detail="dvdCase"><option value="">Nicht angegeben</option><option>Vorhanden</option><option>Fehlt</option></select></label>
+                <label>Booklet<select data-film-detail="dvdBooklet"><option value="">Nicht angegeben</option><option>Vorhanden</option><option>Fehlt</option></select></label>
+              </div>
+              <div class="film-format-fields hidden" data-film-format="Blu-ray">
+                <label>Blu-ray-Variante<input data-film-detail="blurayVariant" maxlength="100"></label><label>Regionalcode<input data-film-detail="regionCode" maxlength="50"></label>
+                <label>Auflösung<input data-film-detail="resolution" maxlength="80"></label><label>Bildformat<input data-film-detail="aspectRatio" maxlength="80"></label>
+                <label>HDR-Unterstützung<input data-film-detail="hdr" maxlength="100"></label><label>Tonformate<input data-film-detail="audioFormats" maxlength="240"></label>
+                <label>Anzahl Discs<input data-film-detail="discCount" type="number" min="1" max="1000"></label><label>Bonusmaterial<input data-film-detail="bonus" maxlength="400"></label>
+                <label>Verpackung<input data-film-detail="packaging" maxlength="100" placeholder="Steelbook, Mediabook …"></label>
+              </div>
+              <div class="film-format-fields hidden" data-film-format="3D-Blu-ray">
+                <label>Regionalcode<input data-film-detail="regionCode" maxlength="50"></label><label>Auflösung<input data-film-detail="resolution" maxlength="80"></label>
+                <label>HDR-Unterstützung<input data-film-detail="hdr" maxlength="100"></label><label>Tonformate<input data-film-detail="audioFormats" maxlength="240"></label>
+                <label>Anzahl Discs<input data-film-detail="discCount" type="number" min="1" max="1000"></label><label>Bonusmaterial<input data-film-detail="bonus" maxlength="400"></label>
+                <label>Verpackung<input data-film-detail="packaging" maxlength="100"></label>
+              </div>
+              <div class="film-format-fields hidden" data-film-format="4K Ultra HD">
+                <label>HDR-Format<input data-film-detail="hdr" maxlength="100"></label><label>Tonformate<input data-film-detail="audioFormats" maxlength="240"></label>
+                <label>Anzahl Discs<input data-film-detail="discCount" type="number" min="1" max="1000"></label><label>Enthaltene Blu-ray / Bonus-Disc<input data-film-detail="includedDiscs" maxlength="180"></label>
+                <label>Edition / Verpackung<input data-film-detail="packaging" maxlength="120"></label>
+              </div>
+              <div class="film-format-fields hidden" data-film-format="Digitaler Film">
+                <label>Zugang<select data-film-detail="digitalAccess"><option value="">Nicht angegeben</option><option>Kauf</option><option>Leihe</option><option>Abo</option><option>Kostenlos</option></select></label>
+                <label>Plattform / Shop<input data-film-detail="platform" maxlength="160"></label><label>Digitale Auflösung<input data-film-detail="resolution" maxlength="80"></label>
+                <label>Sprache / Tonspuren<input data-film-detail="audioLanguages" maxlength="240"></label><label>Speicherort / Plattformverweis<input data-film-detail="digitalLocation" maxlength="240"></label>
+                <label>Zugang verfügbar<select data-film-detail="accessAvailable"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option><option>Unbekannt</option></select></label>
+              </div>
+              <div class="film-format-fields hidden" data-film-format="Streaming">
+                <label>Zugang<select data-film-detail="digitalAccess"><option value="">Nicht angegeben</option><option>Kauf</option><option>Leihe</option><option>Abo</option></select></label><label>Plattform<input data-film-detail="platform" maxlength="160"></label>
+                <label>Auflösung<input data-film-detail="resolution" maxlength="80"></label><label>Sprache / Tonspuren<input data-film-detail="audioLanguages" maxlength="240"></label>
+                <label>Verfügbarkeit<select data-film-detail="accessAvailable"><option value="">Nicht angegeben</option><option>Ja</option><option>Nein</option><option>Unbekannt</option></select></label>
+              </div>
+              <div class="film-format-fields hidden" data-film-format="VHS">
+                <label>Bandzustand<input data-film-detail="tapeCondition" maxlength="120"></label><label>Bildformat<input data-film-detail="aspectRatio" maxlength="80"></label><label>Tonformate<input data-film-detail="audioFormats" maxlength="240"></label>
+              </div>
+            </fieldset>
+            <fieldset class="film-section">
+              <legend>Serien, Staffeln & Sammlungen</legend>
+              <div class="film-form-grid">
+                <label>Serienname<input id="film-series-name" maxlength="180"></label><label>Staffelnummer<input id="film-season-number" type="number" min="1" max="999"></label>
+                <label>Episodenanzahl<input id="film-episode-count" type="number" min="0" max="10000"></label><label>Laufzeit pro Episode (Minuten)<input id="film-episode-runtime" type="number" min="1" max="1000"></label>
+                <label>Vollständigkeit der Staffel<select id="film-season-completeness"><option value="">Nicht zutreffend</option><option>Vollständig</option><option>Teilweise</option><option>Ungeprüft</option></select></label>
+                <label>Disc-Anzahl / digitale Verfügbarkeit<input id="film-season-media" maxlength="180"></label><label>Teil einer Box / Sammlung<input id="film-box-name" maxlength="180"></label>
+                <label>Episode(n) (optional, ein Titel pro Zeile)<textarea id="film-episodes" rows="3" maxlength="3000"></textarea></label>
+              </div>
+            </fieldset>
+            <fieldset class="film-section">
+              <legend>Kauf, Bewertung & Bilder</legend>
+              <div class="film-form-grid">
+                <label>Kaufdatum<input id="film-purchase-date" type="date"></label><label>Kaufpreis (€)<input id="film-purchase-price" type="number" min="0" step="0.01"></label>
+                <label>Geschätzter aktueller Wert (€)<input id="film-estimated-value" type="number" min="0" step="0.01"></label><label>Kaufort<input id="film-source" maxlength="180"></label>
+                <label>Lager- / Regalplatz<input id="film-location" maxlength="180"></label><label>Bewertung (1–5)<input id="film-rating-score" type="number" min="1" max="5" step="1"></label>
+              </div>
+              <label>Beschreibung<textarea id="film-description" rows="3" maxlength="3000"></textarea></label>
+              <label>Eigene Auswahlwerte<input id="film-custom-values" maxlength="1000" placeholder="Eigene Merkmale, durch Semikolon getrennt"></label>
+              <label class="film-photo-input">Cover, Poster und weitere Bilder<input id="film-photos-input" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+              <p class="photo-help">Bis zu acht verkleinerte Bilder je Ausgabe.</p><div id="film-photo-gallery" class="film-photo-gallery"></div>
+            </fieldset>
+            <p id="film-form-message" class="form-message" role="status" aria-live="polite"></p>
+            <div class="button-row film-form-actions"><button class="button button-primary" type="submit">Medium speichern</button><button id="film-editor-cancel" class="button button-secondary" type="button">Abbrechen</button></div>
+          </form>
+        </section>
+        <section id="film-detail" class="film-detail card hidden" aria-labelledby="film-detail-heading"></section>
+        <details class="film-settings card"><summary>Eigene Kategorien und Auswahlwerte verwalten</summary>
+          <div class="film-settings-grid">
+            <label>Neue Kategorie<input id="film-add-category" maxlength="120"></label><button id="film-save-category" class="button button-secondary" type="button">Kategorie ergänzen</button>
+            <label>Neues Genre<input id="film-add-genre" maxlength="120"></label><button id="film-save-genre" class="button button-secondary" type="button">Genre ergänzen</button>
+            <label>Neuer Zustand<input id="film-add-condition" maxlength="120"></label><button id="film-save-condition" class="button button-secondary" type="button">Zustand ergänzen</button>
+            <label>Neue Funktionsangabe<input id="film-add-functionality" maxlength="120"></label><button id="film-save-functionality" class="button button-secondary" type="button">Funktionsangabe ergänzen</button>
+            <label>Neue Altersfreigabe<input id="film-add-rating" maxlength="120"></label><button id="film-save-rating" class="button button-secondary" type="button">Freigabe ergänzen</button>
+            <label>Neuer Vollständigkeitswert<input id="film-add-completeness" maxlength="120"></label><button id="film-save-completeness" class="button button-secondary" type="button">Wert ergänzen</button>
+          </div>
+        </details>
+      </section>
+
+      <section id="filaments-view" class="app-view hidden" aria-labelledby="filaments-page-heading" data-management-view="filaments" data-management-label="Filamente" data-management-icon="◉">
+        <div class="filaments-page-heading">
+          <div>
+            <p class="eyebrow">3D-DRUCKMATERIALIEN</p>
+            <h2 id="filaments-page-heading">Filamente</h2>
+            <p class="muted">Rollen, Materialbestand, Lagerung und Verbrauch an einem Ort.</p>
+          </div>
+          <div class="filaments-heading-actions">
+            <button class="button button-secondary" type="button" data-recognition-category="filaments">▦ Scannen / Produkt erkennen</button>
+            <button id="filament-create" class="button button-primary" type="button">Rolle hinzufügen</button>
+          </div>
+        </div>
+        <section class="filament-ams card" aria-labelledby="filament-ams-heading">
+          <div class="filament-ams-heading">
+            <div class="filament-ams-title">
+              <span class="filament-ams-icon" aria-hidden="true">▤</span>
+              <div>
+                <p class="eyebrow">DRUCKER-SLOTS</p>
+                <h3 id="filament-ams-heading">AMS & Materialzufuhr</h3>
+              </div>
+            </div>
+            <p class="muted">Ordne deine Bestandsrollen den Drucker-Slots zu und buche den Verbrauch manuell.</p>
+          </div>
+          <form id="filament-ams-add-form" class="filament-ams-add-form">
+            <label>AMS-Modell<select id="filament-ams-model">
+              <option value="AMS 2 Pro">Bambu Lab AMS 2 Pro (4 Slots)</option>
+              <option value="AMS Lite">Bambu Lab AMS Lite / Light (4 Slots)</option>
+              <option value="AMS">Bambu Lab AMS (4 Slots)</option>
+              <option value="AMS HT">Bambu Lab AMS HT (1 Slot)</option>
+              <option value="Benutzerdefiniert">Andere Materialzufuhr</option>
+            </select></label>
+            <label>Beschriftung<input id="filament-ams-name" maxlength="100" placeholder="z. B. AMS oben"></label>
+            <label>Drucker-Zuordnung<input id="filament-ams-printer" maxlength="120" placeholder="z. B. X1 Carbon im Arbeitszimmer"></label>
+            <label id="filament-ams-custom-slots-wrap" class="hidden">Anzahl Slots<input id="filament-ams-custom-slots" type="number" min="1" max="16" value="4"></label>
+            <button class="button button-primary" type="submit">AMS hinzufügen</button>
+          </form>
+          <p class="filament-ams-note">Manuelle Verwaltung ohne direkte Drucker- oder AMS-Verbindung. Eine Rolle kann jeweils nur einem Slot zugeordnet sein.</p>
+          <div id="filament-ams-list" class="filament-ams-list" aria-live="polite"></div>
+        </section>
+        <div class="filament-overview" aria-label="Filamentbestand">
+          <article class="filament-stat card"><span>Aktiver Bestand</span><strong id="filament-total-weight">0 g</strong><small>Restmenge nicht archivierter und nicht leerer Rollen</small></article>
+          <article class="filament-stat card"><span>Geschätzter Restwert</span><strong id="filament-total-value">0,00 €</strong><small>Anteilig aus Kaufpreis und Restmenge; Rollen ohne Kaufpreis sind nicht bewertet.</small></article>
+          <article class="filament-stat card"><span>Rollen / niedriger Bestand</span><strong id="filament-count">0 / 0</strong><small>Rollen im aktiven Bestand / unter ihrem individuellen Schwellenwert</small></article>
+        </div>
+        <div id="filament-warnings" class="filament-warnings" aria-live="polite"></div>
+        <section aria-labelledby="filament-summary-heading">
+          <h3 id="filament-summary-heading">Bestand nach Material und Farbe</h3>
+          <div id="filament-material-summary" class="filament-summary-grid"></div>
+        </section>
+        <section class="filament-toolbar card" aria-label="Filamentrollen suchen und filtern">
+          <label for="filament-query">Suche</label>
+          <input id="filament-query" type="search" maxlength="160" autocomplete="off" placeholder="Hersteller, Produkt, Material, Farbe, Lotnummer, Lagerort …">
+          <div class="filament-filter-grid">
+            <label>Materialtyp<select id="filament-filter-type"><option value="">Alle Materialtypen</option></select></label>
+            <label>Farbe<input id="filament-filter-color" type="search" maxlength="100" placeholder="Alle Farben"></label>
+            <label>Durchmesser<select id="filament-filter-diameter"><option value="">Alle Durchmesser</option></select></label>
+            <label>Feuchtigkeitsstatus<select id="filament-filter-humidity"><option value="">Alle Feuchtigkeitswerte</option></select></label>
+            <label>Lagerort<input id="filament-filter-location" type="search" maxlength="120" placeholder="Alle Lagerorte"></label>
+            <label>Bestand<select id="filament-filter-remaining">
+              <option value="">Alle Rollen</option><option value="low">Niedriger Bestand</option>
+              <option value="open">Angebrochen</option><option value="full">Voll</option>
+              <option value="empty">Leer</option><option value="archived">Archiviert</option>
+            </select></label>
+            <label>Sortieren nach<select id="filament-sort">
+              <option value="remainingG">Restmenge</option><option value="purchaseDate">Kaufdatum</option>
+              <option value="unitPrice">Preis pro kg</option><option value="manufacturer">Hersteller</option>
+            </select></label>
+            <label>Reihenfolge<select id="filament-sort-direction"><option value="asc">Aufsteigend</option><option value="desc">Absteigend</option></select></label>
+          </div>
+          <div class="filament-toolbar-footer">
+            <span id="filament-result-count" class="muted" aria-live="polite">0 Rollen</span>
+            <span id="filament-status" class="form-message" role="status" aria-live="polite"></span>
+            <div class="button-row">
+              <button id="filament-view-grid" class="button button-secondary" type="button" aria-pressed="true">Kachelansicht</button>
+              <button id="filament-view-list" class="button button-secondary" type="button" aria-pressed="false">Listenansicht</button>
+              <button id="filament-clear-filters" class="button button-quiet" type="button">Filter zurücksetzen</button>
+            </div>
+          </div>
+        </section>
+        <section id="filament-editor" class="filament-editor card hidden" aria-labelledby="filament-editor-heading">
+          <div class="filament-editor-heading">
+            <div><p class="eyebrow">FILAMENTROLLE</p><h3 id="filament-editor-heading">Rolle hinzufügen</h3></div>
+            <button id="filament-editor-close" class="icon-button" type="button" aria-label="Formular schließen">×</button>
+          </div>
+          <form id="filament-form" class="filament-form">
+            <input id="filament-spool-id" type="hidden">
+            <fieldset class="filament-section">
+              <legend>Produktdaten</legend>
+              <label>Vorhandenes Produkt (optional)<select id="filament-product-select"><option value="">Neues Produkt</option></select></label>
+              <div class="filament-form-grid">
+                <label>Hersteller<input id="filament-manufacturer" list="filament-manufacturer-options" maxlength="120" autocomplete="organization"><datalist id="filament-manufacturer-options"></datalist></label>
+                <label>Produktname<input id="filament-product-name" maxlength="160" required></label>
+                <label>Materialtyp<select id="filament-material-type" required></select></label>
+                <label>Variante<input id="filament-variant" maxlength="120" placeholder="z. B. Matte, CF, Silk"></label>
+                <label>Farbe<input id="filament-color" maxlength="100"></label>
+                <label>Hersteller-Farbname<input id="filament-manufacturer-color" maxlength="120"></label>
+                <label>Farbcode<input id="filament-color-hex" type="text" maxlength="7" pattern="#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})" placeholder="#RRGGBB" title="Optionaler Farbwert als #RGB oder #RRGGBB"></label>
+                <label>Artikelnummer<input id="filament-sku" maxlength="120"></label>
+                <label>Durchmesser<select id="filament-diameter"><option value="1.75">1,75 mm</option><option value="2.85">2,85 mm</option><option value="custom">Eigener Wert</option></select></label>
+                <label id="filament-custom-diameter-wrap" class="hidden">Eigener Durchmesser (mm)<input id="filament-custom-diameter" type="number" min="0.1" max="10" step="0.01"></label>
+                <label>Nettogewicht Filament (g)<input id="filament-net-weight" type="number" min="1" max="100000" step="1"></label>
+                <label>Leergewicht Spule (g)<input id="filament-empty-spool-weight" type="number" min="0" max="100000" step="1"></label>
+                <label>Gesamtgewicht volle Rolle (g)<input id="filament-full-weight" type="number" min="1" max="200000" step="1"></label>
+                <label>Spulentyp<input id="filament-spool-type" maxlength="100"></label>
+                <label>Spulenmaterial<input id="filament-spool-material" maxlength="100"></label>
+                <label>Spulendurchmesser (mm)<input id="filament-spool-diameter" type="number" min="1" max="1000" step="0.1"></label>
+                <label>Spulenbreite (mm)<input id="filament-spool-width" type="number" min="1" max="1000" step="0.1"></label>
+                <label>Herstellungsdatum<input id="filament-manufactured-date" type="date"></label>
+                <label>Empfohlene Lagerfrist<input id="filament-shelf-life" maxlength="120" placeholder="Nur falls angegeben"></label>
+              </div>
+              <div class="filament-section">
+                <h4>Optionale technische Angaben</h4>
+                <p class="muted">Unbekannte Werte bleiben leer. Trage nur Angaben vom Hersteller oder eigene Messwerte ein.</p>
+                <div class="filament-tech-grid">
+                  <label>Düsentemperatur<input data-filament-tech="nozzleTemperatureC" maxlength="120" placeholder="°C oder Bereich"></label>
+                  <label>Druckbetttemperatur<input data-filament-tech="bedTemperatureC" maxlength="120" placeholder="°C oder Bereich"></label>
+                  <label>Druckgeschwindigkeit<input data-filament-tech="printSpeedMmS" maxlength="120" placeholder="mm/s"></label>
+                  <label class="hidden">Trocknungstemperatur<input data-filament-tech="dryingTempC" maxlength="120" placeholder="°C"></label>
+                  <label class="hidden">Trocknungsdauer<input data-filament-tech="dryingDuration" maxlength="120" placeholder="Stunden"></label>
+                  <label>Kühlung<input data-filament-tech="cooling" maxlength="120"></label>
+                  <label>Druckoberfläche<input data-filament-tech="bedSurface" maxlength="160"></label>
+                  <label>Druckkammer<input data-filament-tech="enclosure" maxlength="120"></label>
+                  <label class="hidden">Gehärtete Düse<input data-filament-tech="hardenedNozzle" maxlength="120"></label>
+                  <label class="hidden">Abrasivität<input data-filament-tech="abrasiveness" maxlength="120"></label>
+                  <label class="hidden">Shore-Härte<input data-filament-tech="shoreHardness" maxlength="120"></label>
+                  <label>Dichte<input data-filament-tech="densityGcm3" maxlength="120" placeholder="g/cm³"></label>
+                  <label>Zugfestigkeit<input data-filament-tech="tensileStrengthMpa" maxlength="120" placeholder="MPa"></label>
+                  <label>Wärmeformbeständigkeit<input data-filament-tech="heatDeflectionTempC" maxlength="120" placeholder="°C"></label>
+                  <label class="hidden">Feuchtigkeitsempfindlichkeit<input data-filament-tech="moistureSensitivity" maxlength="160"></label>
+                  <label>Herstellerhinweise<input data-filament-tech="manufacturerNotes" maxlength="300"></label>
+                  <label>Datenblatt-URL<input data-filament-tech="datasheetUrl" type="url" maxlength="500"></label>
+                </div>
+                <div id="filament-material-hints" class="filament-material-hints" aria-live="polite"></div>
+                <label>Eigene technische Werte (eine Zeile je Wert: Bezeichnung | Wert | Einheit)<textarea id="filament-custom-tech" rows="3" maxlength="3000"></textarea></label>
+              </div>
+              <label>Produktfoto<input id="filament-product-photo-input" type="file" accept="image/*"></label>
+              <div id="filament-product-photo-preview" class="filament-photo-gallery"></div>
+            </fieldset>
+            <fieldset class="filament-section">
+              <legend>Einzelne Rolle & Bestand</legend>
+              <div class="filament-form-grid">
+                <label>Chargen- / Lotnummer<input id="filament-lot" maxlength="120"></label>
+                <label>Ursprüngliches Nettogewicht (g)<input id="filament-original-weight" type="number" min="0" max="100000" step="1"></label>
+                <label>Aktuelle Restmenge (g)<input id="filament-remaining-weight" type="number" min="0" max="100000" step="1"></label>
+                <label>Status<select id="filament-state"><option value="unknown">Unbekannt</option><option value="full">Voll</option><option value="open">Angebrochen</option><option value="empty">Leer</option><option value="archived">Archiviert</option></select></label>
+                <label>Gewogenes Gesamtgewicht (g)<input id="filament-weighed-total" type="number" min="0" max="200000" step="1"></label>
+                <div class="filament-weight-calculate"><button id="filament-calculate-weight" class="button button-secondary" type="button">Restmenge berechnen</button><small>Gesamtgewicht minus Leergewicht der Spule</small></div>
+                <label>Warnschwelle (g)<input id="filament-low-threshold" type="number" min="0" max="100000" step="1" value="100"></label>
+                <label>Kaufdatum<input id="filament-purchase-date" type="date"></label>
+                <label>Kaufpreis (€)<input id="filament-purchase-price" type="number" min="0" max="1000000" step="0.01"></label>
+                <label>Preis pro kg (berechnet)<input id="filament-unit-price" readonly aria-readonly="true"></label>
+                <label>Händler<input id="filament-dealer" maxlength="160"></label>
+                <label>Lagerort<input id="filament-location" maxlength="160"></label>
+                <label>Behälter / Trockenbox<input id="filament-container" maxlength="160"></label>
+                <label>Lagerungsstatus<input id="filament-storage-status" maxlength="120" placeholder="z. B. Trockenbox, Regal"></label>
+                <label>Feuchtigkeitsstatus<select id="filament-humidity"><option>Unbekannt</option><option>Trocken</option><option>Möglicherweise feucht</option><option>Muss getrocknet werden</option></select></label>
+                <label>Manuell gemessene Luftfeuchtigkeit (%)<input id="filament-humidity-percent" type="number" min="0" max="100" step="0.1"></label>
+                <label>Letzte Trocknung<input id="filament-last-dried" type="date"></label>
+                <label>Trocknungstemperatur (°C)<input id="filament-drying-temp" type="number" min="0" max="300" step="1"></label>
+                <label>Trocknungsdauer (Stunden)<input id="filament-drying-duration" type="number" min="0" max="1000" step="0.5"></label>
+                <label>Drucker-Verknüpfung<input id="filament-printer-link" maxlength="160"></label>
+                <label>Persönliches Druckprofil<input id="filament-profile-link" list="filament-profile-options" maxlength="160"><datalist id="filament-profile-options"></datalist></label>
+              </div>
+              <label>Rollenfoto<input id="filament-spool-photo-input" type="file" accept="image/*"></label>
+              <div id="filament-spool-photo-preview" class="filament-photo-gallery"></div>
+              <label>Eigene Notizen<textarea id="filament-notes" rows="3" maxlength="5000"></textarea></label>
+            </fieldset>
+            <p id="filament-form-message" class="form-message" role="status" aria-live="polite"></p>
+            <div class="button-row filament-form-actions">
+              <button class="button button-primary" type="submit">Rolle speichern</button>
+              <button id="filament-editor-cancel" class="button button-secondary" type="button">Abbrechen</button>
+            </div>
+          </form>
+        </section>
+        <section id="filament-detail" class="filament-detail card hidden" aria-label="Filament-Rollendetails"></section>
+        <section class="filament-settings card" aria-label="Eigene Filamentauswahlwerte und Druckprofile">
+          <details>
+            <summary>Eigene Materialtypen, Hersteller und Druckprofile verwalten</summary>
+            <div class="filament-settings-grid">
+              <label>Neuer Materialtyp<input id="filament-add-type" maxlength="120"></label>
+              <button id="filament-save-type" class="button button-secondary" type="button">Materialtyp ergänzen</button>
+              <label>Neuer Hersteller<input id="filament-add-manufacturer" maxlength="120"></label>
+              <button id="filament-save-manufacturer" class="button button-secondary" type="button">Hersteller ergänzen</button>
+            </div>
+            <form id="filament-profile-form" class="filament-profile-form">
+              <strong>Persönliches Druckprofil</strong>
+              <div class="filament-form-grid">
+                <label>Profilname<input id="filament-profile-name" maxlength="120" required></label>
+                <label>Hersteller<input id="filament-profile-manufacturer" maxlength="120"></label>
+                <label>Materialtyp<input id="filament-profile-type" maxlength="120"></label>
+                <label>Variante<input id="filament-profile-variant" maxlength="120"></label>
+                <label>Drucker<input id="filament-profile-printer" maxlength="160"></label>
+              </div>
+              <label>Einstellungen (eine Zeile je Eintrag: Name: Wert)<textarea id="filament-profile-settings" rows="3" maxlength="3000"></textarea></label>
+              <label>Notizen<textarea id="filament-profile-notes" rows="2" maxlength="2000"></textarea></label>
+              <button class="button button-secondary" type="submit">Druckprofil speichern</button>
+            </form>
+            <div id="filament-profiles" class="filament-profile-list"></div>
+          </details>
+        </section>
+        <div id="filament-cards" class="filament-cards" aria-live="polite"></div>
+      </section>
+      <section id="small-parts-view" class="app-view hidden small-parts-view" data-management-view="small-parts" data-management-label="Kleinteile" data-management-icon="⚙" aria-labelledby="small-parts-heading">
+        <div class="page-heading"><p class="eyebrow">BESTAND & LAGER</p><h2 id="small-parts-heading">Kleinteile</h2><p class="muted">Verwalte Verbrauchsmaterial, Ersatzteile und Zubehör mit nachvollziehbaren Bestandsbuchungen und eigenen Lagerorten.</p></div>
+        <div class="small-parts-summary" id="small-parts-summary" aria-live="polite"></div>
+        <section class="card small-parts-location-panel"><details>
+          <summary>Lagerorte und Behälter verwalten</summary>
+          <form id="small-parts-location-form" class="small-parts-form-grid">
+            <label>Name<input id="small-parts-location-name" maxlength="120" required placeholder="z. B. Werkstatt"></label>
+            <label>Übergeordneter Lagerort<select id="small-parts-location-parent"><option value="">Keiner (oberste Ebene)</option></select></label>
+            <label>Eigene Code-Kennung<input id="small-parts-location-code" maxlength="80" placeholder="Wird automatisch vergeben"></label>
+            <label>Notizen<input id="small-parts-location-notes" maxlength="500"></label>
+            <button class="button button-secondary" type="submit">Lagerort anlegen</button>
+          </form>
+          <div id="small-parts-locations" class="small-parts-locations"></div>
+        </details></section>
+        <section class="card small-parts-editor" aria-labelledby="small-parts-editor-heading">
+          <div class="small-parts-section-heading">
+            <div><p class="eyebrow">ARTIKELSTAMM</p><h3 id="small-parts-editor-heading">Kleinteil hinzufügen</h3></div>
+            <div class="button-row"><button id="small-parts-create" class="button button-secondary" type="button">Neues Kleinteil</button><button class="button button-secondary" type="button" data-recognition-category="smallParts">Scannen / Produkt erkennen</button></div>
+          </div>
+          <form id="small-parts-item-form">
+            <input id="small-parts-item-id" type="hidden">
+            <div class="small-parts-form-grid">
+              <label>Artikelname<input id="small-parts-name" maxlength="180" required></label>
+              <label>Kategorie<input id="small-parts-category" maxlength="100" list="small-parts-category-options" placeholder="z. B. Schrauben"><datalist id="small-parts-category-options"></datalist></label>
+              <label>Hersteller<input id="small-parts-manufacturer" maxlength="120"></label>
+              <label>Artikelnummer<input id="small-parts-part-number" maxlength="100"></label>
+              <label>Eigener Barcode / QR-Kennung<input id="small-parts-barcode" maxlength="100"></label>
+              <label>Einheit<input id="small-parts-unit" maxlength="24" value="Stück" required placeholder="Stück, m, g, Packung …"></label>
+              <label>Aktueller Bestand<input id="small-parts-quantity" type="number" min="0" step="any" required value="0"></label>
+              <label>Mindestbestand <span class="optional-label">(leer = nicht festgelegt)</span><input id="small-parts-reorder" type="number" min="0" step="any"></label>
+              <label>Lagerort<select id="small-parts-location-select"><option value="">Kein Lagerort festgelegt</option></select></label>
+              <label class="small-parts-wide">Kurzbeschreibung<textarea id="small-parts-description" rows="2" maxlength="1600"></textarea></label>
+              <label class="small-parts-wide">Notizen<textarea id="small-parts-notes" rows="2" maxlength="3000"></textarea></label>
+              <label class="small-parts-wide">Fotos (bis zu 8)<input id="small-parts-images" type="file" accept="image/*" multiple></label>
+            </div>
+            <div id="small-parts-image-preview" class="small-parts-image-preview"></div>
+            <p id="small-parts-form-message" class="form-message" role="status" aria-live="polite"></p>
+            <div class="button-row"><button class="button button-primary" type="submit">Kleinteil speichern</button><button id="small-parts-cancel" class="button button-secondary" type="button" hidden>Abbrechen</button></div>
+          </form>
+        </section>
+        <section class="small-parts-toolbar" aria-label="Bestand filtern">
+          <label>Suche<input id="small-parts-search" type="search" placeholder="Name, Artikelnummer, Barcode, Lagerort …"></label>
+          <label>Kategorie<select id="small-parts-filter-category"><option value="">Alle Kategorien</option></select></label>
+          <label>Lagerort<select id="small-parts-filter-location"><option value="">Alle Lagerorte</option></select></label>
+          <label>Status<select id="small-parts-filter-status"><option value="">Alle Status</option><option value="low">Nachbestellen</option><option value="ok">Ausreichend</option><option value="unknown">Mindestbestand offen</option><option value="archived">Archiviert</option></select></label>
+          <label>Sortieren<select id="small-parts-sort"><option value="name">Name</option><option value="quantity">Bestand (aufsteigend)</option><option value="category">Kategorie</option><option value="updated">Zuletzt geändert</option></select></label>
+          <label>Code scannen / Tastaturscanner<input id="small-parts-scan-input" autocomplete="off" placeholder="Kennung eingeben und Enter drücken"></label>
+          <button id="small-parts-camera-start" class="button button-secondary" type="button">Kamera starten</button>
+        </section>
+        <section id="small-parts-camera-panel" class="small-parts-camera-panel hidden" aria-label="Barcodekamera"><video id="small-parts-camera-video" playsinline muted></video><button id="small-parts-camera-stop" class="button button-secondary" type="button">Kamera stoppen</button><p id="small-parts-camera-message" class="form-message" role="status"></p></section>
+        <div id="small-parts-list" class="small-parts-list" aria-live="polite"></div>
+        <section id="small-parts-detail" class="card small-parts-detail hidden" aria-live="polite"></section>
+      </section>
       <section id="barcode-view" class="app-view hidden" aria-labelledby="barcode-page-heading">
         <div class="page-heading">
           <p class="eyebrow">ETIKETTEN</p>
@@ -420,7 +1041,7 @@
             <button id="barcode-gen-random" class="button button-secondary" type="button">Zufällig</button>
           </div>
           <label for="barcode-gen-caption">Beschriftung <span class="optional-label">(optional)</span></label>
-          <input id="barcode-gen-caption" maxlength="60" autocomplete="off" placeholder="z. B. Filament-Kiste">
+          <input id="barcode-gen-caption" maxlength="60" autocomplete="off" placeholder="z. B. Sammlungsbox">
           <div class="button-row barcode-actions">
             <button class="button button-primary" type="submit">Barcode erzeugen</button>
             <button id="barcode-gen-svg" class="button button-secondary" type="button" disabled>SVG speichern</button>
@@ -466,10 +1087,12 @@
             </div>
             <span class="lock-icon" aria-hidden="true">⇩</span>
           </div>
-          <p class="muted settings-copy">Exportiere deine Sammlung als JSON-Datei oder stelle sie auf diesem oder einem anderen Gerät wieder her. Die Datei enthält deine Sammlungs-ID und alle Einträge.</p>
+          <p class="muted settings-copy">Exportiere deine Sammlung als JSON-Datei oder stelle sie auf diesem oder einem anderen Gerät wieder her. Die Datei enthält deine Sammlungs-ID und alle Einträge. Der PDF-Export erstellt eine lesbare Bestandsübersicht, die sich nicht wieder importieren lässt.</p>
           <div class="button-row">
             <button id="export-data" class="button button-primary" type="button">Sammlung exportieren</button>
             <button id="import-data-button" class="button button-secondary" type="button">Sicherung importieren</button>
+            <button id="export-pdf" class="button button-secondary" type="button">Als PDF exportieren</button>
+            <button id="export-charts" class="button button-secondary" type="button">Diagramme als Bild exportieren</button>
             <input id="import-data-file" class="hidden" type="file" accept=".json,application/json">
           </div>
           <p id="backup-message" class="form-message" role="status" aria-live="polite"></p>
@@ -499,6 +1122,63 @@
         <p class="privacy-note"><span aria-hidden="true">⌁</span> Offline lokal verfügbar · Supabase optional</p>
       </section>
     </main>
+    <dialog id="small-parts-booking-dialog" class="small-parts-booking-dialog" aria-labelledby="small-parts-booking-heading">
+      <form id="small-parts-booking-form">
+        <p class="eyebrow">BESTANDSBEWEGUNG</p>
+        <h2 id="small-parts-booking-heading">Bestand buchen</h2>
+        <p id="small-parts-booking-item" class="muted"></p>
+        <input id="small-parts-booking-id" type="hidden">
+        <label>Buchungsart<select id="small-parts-booking-kind"><option value="in">Zugang</option><option value="out">Verbrauch / Abgang</option><option value="adjustment">Bestand korrigieren (neuer Gesamtbestand)</option></select></label>
+        <label id="small-parts-booking-quantity-label">Menge<input id="small-parts-booking-quantity" type="number" min="0.000001" step="any" required></label>
+        <span id="small-parts-booking-unit" class="muted"></span>
+        <label>Datum<input id="small-parts-booking-date" type="date" required></label>
+        <label>Projekt / Auftrag<input id="small-parts-booking-project" maxlength="160"></label>
+        <label>Notiz<input id="small-parts-booking-note" maxlength="500"></label>
+        <p id="small-parts-booking-message" class="form-message" role="status"></p>
+        <div class="button-row">
+          <button class="button button-secondary" type="button" data-small-parts-booking-close>Abbrechen</button>
+          <button class="button button-primary" type="submit">Buchung bestätigen</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="product-recognition-dialog" class="recognition-dialog" aria-labelledby="recognition-heading">
+      <div class="recognition-header">
+        <div><p class="eyebrow">KATALOGIC-IMPORT</p><h2 id="recognition-heading">Scannen / Produkt erkennen</h2></div>
+        <button id="recognition-close" class="icon-button" type="button" aria-label="Dialog schließen">×</button>
+      </div>
+      <label>Kategorie<select id="recognition-category">
+        <option value="devices">Geräte</option><option value="games">Spiele</option><option value="books">Bücher</option>
+        <option value="films">Filme</option><option value="filaments">Filamente</option><option value="smallParts">Kleinteile</option>
+      </select></label>
+      <section class="recognition-section" aria-label="Barcode-Erkennung">
+        <h3>Barcode</h3>
+        <p class="muted">Kamera nach Klick starten oder Barcode mit einem USB-/Bluetooth-Scanner ins Eingabefeld tippen.</p>
+        <div class="recognition-row">
+          <input id="recognition-barcode" type="search" inputmode="numeric" autocomplete="off" maxlength="32" placeholder="EAN, UPC oder ISBN">
+          <button id="recognition-lookup" class="button button-primary" type="button">Produkt suchen</button>
+        </div>
+        <div class="recognition-row">
+          <button id="recognition-camera-start" class="button button-secondary" type="button">Kamera starten</button>
+          <button id="recognition-camera-stop" class="button button-quiet" type="button" disabled>Kamera stoppen</button>
+          <a id="recognition-web-search" class="button button-quiet" href="https://www.google.com/" target="_blank" rel="noopener noreferrer">Google-Suche öffnen</a>
+        </div>
+        <video id="recognition-video" class="recognition-video hidden" playsinline muted aria-label="Barcode-Kamerabild"></video>
+      </section>
+      <section class="recognition-section">
+        <h3>Foto / Texterkennung</h3>
+        <label>Bild aufnehmen oder auswählen<input id="recognition-image" type="file" accept="image/*" capture="environment"></label>
+        <p class="muted">OCR läuft lokal im Browser. Beim ersten Einsatz werden Tesseract.js und deutsche/englische Sprachdaten aus dem Internet geladen; das Bild wird nicht hochgeladen.</p>
+        <progress id="recognition-progress" class="hidden" max="1" value="0"></progress>
+      </section>
+      <section class="recognition-section">
+        <h3>Text einfügen und erkennen</h3>
+        <label for="recognition-text">Text von Verpackung, Produktseite oder Datenblatt</label>
+        <textarea id="recognition-text" rows="5" maxlength="12000" placeholder="Produktinformationen hier einfügen …"></textarea>
+        <button id="recognition-analyze-text" class="button button-secondary" type="button">Text analysieren</button>
+      </section>
+      <p id="recognition-message" class="form-message" role="status" aria-live="polite"></p>
+      <section id="recognition-preview" class="recognition-section hidden" aria-live="polite"></section>
+    </dialog>
     <footer>Mit Sorgfalt gesammelt. <span>© Katalogic</span></footer>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </body>

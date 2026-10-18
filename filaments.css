@@ -1,0 +1,200 @@
+body:has(#filaments-view:not(.hidden)) .layout { width: min(100% - 40px, 1160px); }
+.filaments-page-heading,
+.filament-editor-heading,
+.filament-detail-heading,
+.filament-toolbar-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.filaments-page-heading { margin-bottom: 17px; }
+.filaments-page-heading h2 { margin-bottom: 7px; }
+.filaments-page-heading .muted { margin-bottom: 0; }
+.filament-ams { margin: 12px 0 16px; padding: 16px; }
+.filament-ams-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.filament-ams-title { display: flex; align-items: center; gap: 10px; }
+.filament-ams-title .eyebrow { margin-bottom: 3px; }
+.filament-ams-title h3 { margin: 0; font-size: 16px; }
+.filament-ams-heading > .muted { margin: 0; font-size: 11px; }
+.filament-ams-icon { display: inline-grid; width: 39px; height: 39px; flex: 0 0 39px; place-items: center; border: 1px solid color-mix(in srgb, var(--green) 45%, var(--line)); border-radius: 12px; background: color-mix(in srgb, var(--green) 12%, var(--card)); color: var(--green); font-size: 23px; }
+.filament-ams-add-form { display: grid; grid-template-columns: minmax(170px, 1.1fr) minmax(150px, .8fr) minmax(190px, 1.2fr) minmax(105px, .5fr) auto; gap: 9px; align-items: end; margin-top: 14px; }
+.filament-ams-add-form label,
+.filament-ams-label-form label,
+.filament-ams-slot > label,
+.filament-ams-consumption label { min-width: 0; margin: 0; font-size: 10px; }
+.filament-ams-add-form input,
+.filament-ams-add-form select,
+.filament-ams-label-form input,
+.filament-ams-slot select,
+.filament-ams-consumption input:not([type="hidden"]) { display: block; width: 100%; min-width: 0; min-height: 37px; margin-top: 5px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--card); color: var(--ink); font: inherit; font-size: 11px; }
+.filament-ams-add-form > .button { min-height: 37px; white-space: nowrap; }
+.filament-ams-note { margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.filament-ams-list { display: grid; gap: 12px; margin-top: 13px; }
+.filament-ams-empty { margin: 0; padding: 12px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); font-size: 11px; }
+.filament-ams-unit { min-width: 0; padding: 13px; border: 1px solid var(--line); border-radius: 13px; background: color-mix(in srgb, var(--card) 88%, var(--paper)); }
+.filament-ams-unit-heading,
+.filament-ams-unit-heading > div { display: flex; align-items: center; gap: 9px; }
+.filament-ams-unit-heading { justify-content: space-between; }
+.filament-ams-unit-heading h4 { margin: 0; font-size: 13px; }
+.filament-ams-unit-heading p { margin: 3px 0 0; color: var(--muted); font-size: 10px; }
+.filament-ams-unit-heading .filament-ams-icon { width: 32px; height: 32px; flex-basis: 32px; font-size: 18px; }
+.filament-ams-label-form { display: grid; grid-template-columns: minmax(150px, .7fr) minmax(180px, 1fr) auto; gap: 9px; align-items: end; margin-top: 11px; }
+.filament-ams-label-form .button { min-height: 37px; white-space: nowrap; }
+.filament-ams-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
+.filament-ams-slot { min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+.filament-ams-slot-heading { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+.filament-ams-slot-heading h5 { margin: 0; font-size: 11px; }
+.filament-ams-slot-heading .filament-color-swatch { width: 19px; height: 19px; flex-basis: 19px; }
+.filament-ams-stock { min-height: 28px; margin: 7px 0; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.filament-ams-consumption { display: grid; grid-template-columns: minmax(60px, .7fr) auto; gap: 6px; align-items: end; }
+.filament-ams-consumption input:not([type="hidden"]) { min-height: 33px; }
+.filament-ams-consumption .button { min-height: 33px; padding: 0 8px; font-size: 9px; white-space: nowrap; }
+.filament-ams-slot .filament-ams-note { min-height: 28px; font-size: 9px; }
+.filament-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 15px 0; }
+.filament-stat { display: grid; gap: 6px; padding: 14px 17px; }
+.filament-stat > span { color: var(--muted); font-size: 11px; }
+.filament-stat strong { font-size: 20px; }
+.filament-stat small { color: var(--muted); font-size: 9px; line-height: 1.45; }
+.filament-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.filament-summary-item { display: flex; min-width: 0; align-items: center; gap: 9px; padding: 9px 11px; cursor: pointer; }
+.filament-summary-item > span:not(.filament-color-swatch) { min-width: 0; flex: 1; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+.filament-summary-item strong { font-size: 10px; white-space: nowrap; }
+.filament-color-swatch { display: inline-block; width: 23px; height: 23px; flex: 0 0 23px; border: 1px solid rgba(30, 30, 30, .2); border-radius: 50%; }
+.filament-toolbar,
+.filament-editor,
+.filament-detail,
+.filament-settings { margin-top: 14px; padding: 19px; }
+.filament-toolbar > label { margin-top: 0; }
+.filament-filter-grid,
+.filament-form-grid,
+.filament-tech-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px 12px; }
+.filament-filter-grid { margin-top: 10px; }
+.filament-filter-grid label,
+.filament-form-grid label,
+.filament-tech-grid label { min-width: 0; margin: 0; }
+.filament-filter-grid select,
+.filament-form select,
+.filament-form input:not([type="file"]),
+.filament-form textarea,
+.filament-settings input,
+.filament-settings textarea {
+  display: block; width: 100%; min-width: 0; min-height: 39px; margin-top: 5px; padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--card); color: var(--ink); font: inherit; font-size: 12px;
+}
+.filament-form input[type="color"] { min-height: 39px; padding: 4px; }
+.filament-form textarea,
+.filament-settings textarea { resize: vertical; }
+.filament-form { display: grid; gap: 12px; }
+.filament-section { min-width: 0; margin: 3px 0 0; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: color-mix(in srgb, var(--card) 91%, var(--paper)); }
+.filament-section legend { padding: 0 7px; font-size: 13px; font-weight: 800; }
+.filament-section > label { display: block; margin: 8px 0 0; }
+.filament-section textarea { min-height: 72px; }
+.filament-tech-grid { margin-top: 12px; padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--card) 86%, var(--paper)); }
+.filament-material-hints { display: grid; gap: 6px; margin-top: 9px; }
+.filament-material-hints p { margin: 0; padding: 9px 11px; border-left: 3px solid #c69438; border-radius: 5px; background: color-mix(in srgb, #c69438 9%, var(--card)); color: var(--muted); font-size: 10px; line-height: 1.5; }
+.filament-weight-calculate { display: flex; flex-direction: column; align-items: flex-start; justify-content: end; gap: 4px; }
+.filament-weight-calculate small { color: var(--muted); font-size: 9px; }
+.filament-photo-gallery,
+.filament-detail-gallery { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 10px; }
+.filament-photo-gallery figure { position: relative; width: 92px; margin: 0; }
+.filament-photo-gallery img { display: block; width: 92px; height: 82px; border-radius: 9px; object-fit: cover; background: var(--paper); }
+.filament-photo-gallery .icon-button { position: absolute; top: 3px; right: 3px; width: 25px; height: 25px; border-radius: 50%; }
+.filament-form-actions { padding-top: 8px; border-top: 1px solid var(--line); }
+.filament-toolbar-footer { align-items: flex-end; margin-top: 10px; }
+.filament-toolbar-footer .form-message { min-height: 0; margin: 0; }
+.filament-toolbar-footer .button-row { justify-content: flex-end; }
+.filament-warnings { display: grid; gap: 7px; margin-top: 12px; }
+.filament-warning { padding: 12px 15px; border: 1px solid #e2c98a; border-radius: 11px; background: color-mix(in srgb, #e9c769 12%, var(--card)); color: var(--ink); font-size: 11px; }
+.filament-warning strong { color: #8b6214; }
+.filament-warning ul { margin: 6px 0 0; padding-left: 18px; }
+.filament-warning li { margin-top: 3px; }
+.filament-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.filament-card { display: flex; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: 0 5px 18px rgba(35, 45, 56, .045); }
+.filament-card > img { width: 92px; min-height: 154px; flex: 0 0 92px; object-fit: cover; background: var(--paper); }
+.filament-card-content { display: flex; min-width: 0; flex: 1; flex-direction: column; padding: 12px; }
+.filament-card-heading { display: flex; min-width: 0; align-items: flex-start; gap: 9px; }
+.filament-card-heading h3 { margin: 0 0 4px; font-size: 13px; overflow-wrap: anywhere; }
+.filament-card-heading p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
+.filament-card-swatch { width: 28px; height: 28px; flex-basis: 28px; }
+.filament-meter { height: 8px; overflow: hidden; margin: 12px 0 5px; border-radius: 999px; background: color-mix(in srgb, var(--line) 75%, transparent); }
+.filament-meter span { display: block; height: 100%; border-radius: inherit; transition: width .2s ease; }
+.filament-remaining { font-size: 11px; }
+.filament-card-meta { margin: 7px 0 10px; color: var(--muted); font-size: 9px; line-height: 1.5; overflow-wrap: anywhere; }
+.filament-card-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; }
+.filament-card-actions .button { min-height: 30px; padding: 0 8px; font-size: 9px; }
+.filament-low-badge { width: fit-content; margin: 7px 0 0 36px; padding: 4px 7px; border-radius: 999px; background: #fbebc5; color: #825b12; font-size: 9px; font-weight: 800; }
+.filament-cards.is-list { grid-template-columns: 1fr; }
+.filament-cards.is-list .filament-card > img { width: 70px; min-height: 92px; flex-basis: 70px; }
+.filament-cards.is-list .filament-card-content { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(130px, .65fr) minmax(160px, 1.2fr) auto; align-items: center; gap: 7px 14px; }
+.filament-cards.is-list .filament-meter { margin: 0; }
+.filament-cards.is-list .filament-card-meta { margin: 0; }
+.filament-cards.is-list .filament-low-badge { grid-column: 1; margin: 0 0 0 36px; }
+.filament-cards.is-list .filament-card-actions { margin: 0; }
+.filament-empty { display: grid; grid-column: 1 / -1; gap: 5px; padding: 23px; color: var(--muted); text-align: center; }
+.filament-empty strong { color: var(--ink); }
+.filament-editor-heading { margin-bottom: 12px; }
+.filament-editor-heading h3,
+.filament-detail-heading h3 { margin: 0; font-size: 20px; }
+.filament-detail-heading { align-items: flex-start; }
+.filament-detail-heading .muted { margin: 6px 0 0; font-size: 11px; }
+.filament-detail-actions,
+.filament-state-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.filament-state-actions { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.filament-detail-gallery figure { width: 145px; margin: 0; }
+.filament-detail-gallery img { display: block; width: 145px; height: 112px; border-radius: 10px; object-fit: cover; background: var(--paper); }
+.filament-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 13px; }
+.filament-detail-section { min-width: 0; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--card) 90%, var(--paper)); }
+.filament-detail-section h4,
+.filament-consumption-section h4 { margin: 0 0 8px; color: var(--green); font-size: 12px; }
+.filament-detail-section dl { display: grid; gap: 6px; margin: 0; }
+.filament-detail-section dl > div { display: grid; grid-template-columns: minmax(110px, .8fr) 1.2fr; gap: 8px; font-size: 10px; line-height: 1.45; }
+.filament-detail-section dt { color: var(--muted); }
+.filament-detail-section dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.filament-consumption-section { margin-top: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
+.filament-consumption-section > p { color: var(--muted); font-size: 10px; }
+.filament-consumption-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 9px; align-items: end; margin-bottom: 14px; }
+.filament-consumption-form label { margin: 0; }
+.filament-consumption-form input { display: block; width: 100%; min-width: 0; min-height: 39px; margin-top: 5px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--card); color: var(--ink); font: inherit; font-size: 12px; }
+.filament-consumption-history { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.filament-consumption-history li,
+.filament-profile-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+.filament-settings { padding: 0 17px; }
+.filament-settings summary { padding: 15px 0; cursor: pointer; font-size: 12px; font-weight: 800; }
+.filament-settings-grid { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: end; gap: 10px; padding-bottom: 15px; }
+.filament-settings-grid label { margin: 0; }
+.filament-settings-grid .button { min-height: 39px; }
+.filament-profile-form { display: grid; gap: 11px; padding: 13px 0; border-top: 1px solid var(--line); }
+.filament-profile-form > strong { font-size: 12px; }
+.filament-profile-list { padding-bottom: 10px; }
+.filament-profile-item p { margin: 4px 0 0; line-height: 1.5; }
+@media (max-width: 920px) {
+  .filament-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filament-filter-grid,
+  .filament-form-grid,
+  .filament-tech-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filament-ams-add-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filament-ams-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  body:has(#filaments-view:not(.hidden)) .layout { width: min(100% - 24px, 1160px); }
+  .filaments-page-heading { align-items: flex-start; flex-direction: column; }
+  .filament-overview { grid-template-columns: 1fr; }
+  .filament-summary-grid { grid-template-columns: 1fr; }
+  .filament-toolbar,
+  .filament-editor,
+  .filament-detail { padding: 13px; }
+  .filament-filter-grid,
+  .filament-form-grid,
+  .filament-tech-grid,
+  .filament-detail-grid,
+  .filament-settings-grid,
+  .filament-consumption-form { grid-template-columns: 1fr; }
+  .filament-cards { grid-template-columns: 1fr; }
+  .filament-ams { padding: 13px; }
+  .filament-ams-heading { align-items: flex-start; flex-direction: column; }
+  .filament-ams-add-form,
+  .filament-ams-label-form,
+  .filament-ams-slots { grid-template-columns: 1fr; }
+  .filament-ams-unit-heading { align-items: flex-start; }
+  .filament-ams-unit-heading > .button { flex: 0 0 auto; }
+  .filament-cards.is-list .filament-card-content { grid-template-columns: 1fr; }
+  .filament-toolbar-footer { align-items: flex-start; flex-direction: column; }
+  .filament-toolbar-footer .button-row { justify-content: flex-start; }
+  .filament-detail-heading { flex-direction: column; }
+}

@@ -3,37 +3,21 @@
 const STORAGE_KEY = "katalogic-state-v1";
 const THEME_STORAGE_KEY = "katalogic-theme";
 const SYNC_INTERVAL = 60_000;
-const MAX_ITEM_PHOTOS = 3;
 const ACCESSORY_TYPES = {
   original: "Original-Zubehör",
   thirdParty: "Zubehör von Drittanbietern"
 };
-const MAX_PHOTO_FILE_SIZE = 12 * 1024 * 1024;
-const MAX_STORED_PHOTO_SIZE = 400 * 1024;
 const DEFAULT_CATEGORIES = [
-  "3D Drucker",
-  "Bücher",
-  "Filament",
-  "Filme",
-  "Geräte",
   "Kleinteile",
-  "Laser",
-  "Sonstiges",
-  "Spiele",
-  "Zubehör"
+  "Sonstiges"
 ];
 let legacyVaultKey = "";
 let needsStateMigration = false;
 const state = loadState();
-let editingId = null;
 let syncInProgress = false;
 let scannerStream = null;
-let pendingGoogleTab = null;
-let selectedCandidate = null;
 let activeView = "home";
-let gameDetailsExpanded = false;
-let itemPhotos = [];
-let photoProcessing = false;
+let editingRecordId = null;
 let toastTimeout;
 
 const elements = {
@@ -41,12 +25,28 @@ const elements = {
   connectionDot: document.querySelector("#connection-dot"),
   connectionLabel: document.querySelector("#connection-label"),
   homeLink: document.querySelector("#home-link"),
-  welcomeOpenActions: document.querySelector("#welcome-open-actions"),
   taskbar: document.querySelector("#app-taskbar"),
+  managementNavigation: document.querySelector("#management-navigation"),
+  managementToggle: document.querySelector("#management-toggle"),
+  managementMenu: document.querySelector("#management-menu"),
   welcomeIntro: document.querySelector("#welcome-intro"),
+  welcomeOpenActions: document.querySelector("#welcome-open-actions"),
   collectionView: document.querySelector("#collection-view"),
+  catalogEditDialog: document.querySelector("#catalog-edit-dialog"),
+  catalogEditForm: document.querySelector("#catalog-edit-form"),
+  catalogEditName: document.querySelector("#catalog-edit-name"),
+  catalogEditCategory: document.querySelector("#catalog-edit-category"),
+  catalogEditLocation: document.querySelector("#catalog-edit-location"),
+  catalogEditBarcode: document.querySelector("#catalog-edit-barcode"),
+  catalogEditNotes: document.querySelector("#catalog-edit-notes"),
+  catalogEditMessage: document.querySelector("#catalog-edit-message"),
   searchView: document.querySelector("#search-view"),
-  addView: document.querySelector("#add-view"),
+  devicesView: document.querySelector("#devices-view"),
+  booksView: document.querySelector("#books-view"),
+  filmsView: document.querySelector("#films-view"),
+  gamesView: document.querySelector("#games-view"),
+  filamentsView: document.querySelector("#filaments-view"),
+  smallPartsView: document.querySelector("#small-parts-view"),
   syncView: document.querySelector("#sync-view"),
   barcodeView: document.querySelector("#barcode-view"),
   barcodeGenForm: document.querySelector("#barcode-generator-form"),
@@ -66,63 +66,16 @@ const elements = {
   librarySearchQuery: document.querySelector("#library-search-query"),
   librarySearchMessage: document.querySelector("#library-search-message"),
   librarySearchResults: document.querySelector("#library-search-results"),
-  ocrImage: document.querySelector("#ocr-image"),
-  ocrFileName: document.querySelector("#ocr-file-name"),
-  itemPhotosName: document.querySelector("#item-photos-name"),
-  ocrRun: document.querySelector("#ocr-run"),
-  ocrProgress: document.querySelector("#ocr-progress"),
-  ocrMessage: document.querySelector("#ocr-message"),
-  ocrLines: document.querySelector("#ocr-lines"),
-  ocrLineList: document.querySelector("#ocr-line-list"),
   libraryStartScanner: document.querySelector("#library-start-scanner"),
   libraryStopScanner: document.querySelector("#library-stop-scanner"),
   libraryScannerPanel: document.querySelector("#library-scanner-panel"),
   libraryScannerVideo: document.querySelector("#library-scanner-video"),
   libraryScannerMessage: document.querySelector("#library-scanner-message"),
-  itemForm: document.querySelector("#item-form"),
-  itemName: document.querySelector("#item-name"),
-  itemCategory: document.querySelector("#item-category"),
-  accessoryField: document.querySelector("#accessory-field"),
-  accessoryType: document.querySelector("#accessory-type"),
-  itemNotes: document.querySelector("#item-notes"),
-  itemLocation: document.querySelector("#item-location"),
-  itemBarcode: document.querySelector("#item-barcode"),
-  itemPhotos: document.querySelector("#item-photos"),
-  itemPhotoPreview: document.querySelector("#item-photo-preview"),
-  photoMessage: document.querySelector("#photo-message"),
-  gameDetails: document.querySelector("#game-details"),
-  gameDetailsToggle: document.querySelector("#game-details-toggle"),
   itemList: document.querySelector("#item-list"),
   itemCount: document.querySelector("#item-count"),
   categoryFilter: document.querySelector("#category-filter"),
   collectionPrompt: document.querySelector("#collection-prompt"),
-  lookupCategory: document.querySelector("#lookup-category"),
   emptyState: document.querySelector("#empty-state"),
-  itemFormHeading: document.querySelector("#item-form-heading"),
-  saveItem: document.querySelector("#save-item"),
-  cancelEdit: document.querySelector("#cancel-edit"),
-  barcodeForm: document.querySelector("#barcode-form"),
-  barcodeQuery: document.querySelector("#barcode-query"),
-  titleSearchForm: document.querySelector("#title-search-form"),
-  titleQuery: document.querySelector("#title-query"),
-  lookupMessage: document.querySelector("#lookup-message"),
-  searchProviderMessage: document.querySelector("#search-provider-message"),
-  lookupResults: document.querySelector("#lookup-results"),
-  googleFallback: document.querySelector("#google-fallback"),
-  googleFallbackLabel: document.querySelector("#google-fallback-label"),
-  googleSearchLink: document.querySelector("#google-search-link"),
-  googleShoppingLink: document.querySelector("#google-shopping-link"),
-  googleBarcodeQuery: document.querySelector("#google-barcode-query"),
-  googleWidgetOpen: document.querySelector("#google-widget-open"),
-  googleWidgetSameTab: document.querySelector("#google-widget-same-tab"),
-  googleCameraScan: document.querySelector("#google-camera-scan"),
-  googleScanMessage: document.querySelector("#google-scan-message"),
-  selectedPreview: document.querySelector("#selected-preview"),
-  startScanner: document.querySelector("#start-scanner"),
-  stopScanner: document.querySelector("#stop-scanner"),
-  scannerPanel: document.querySelector("#scanner-panel"),
-  scannerVideo: document.querySelector("#scanner-video"),
-  scannerMessage: document.querySelector("#scanner-message"),
   settingsForm: document.querySelector("#settings-form"),
   supabaseUrl: document.querySelector("#supabase-url"),
   supabaseKey: document.querySelector("#supabase-key"),
@@ -133,11 +86,48 @@ const elements = {
   syncIdMessage: document.querySelector("#sync-id-message"),
   copySyncId: document.querySelector("#copy-sync-id"),
   exportData: document.querySelector("#export-data"),
+  exportPdf: document.querySelector("#export-pdf"),
+  exportCharts: document.querySelector("#export-charts"),
   importDataButton: document.querySelector("#import-data-button"),
   importDataFile: document.querySelector("#import-data-file"),
   backupMessage: document.querySelector("#backup-message"),
   toast: document.querySelector("#toast")
 };
+
+const MANAGEMENT_ICONS = {
+  devices: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  games: '<path d="M7 7h10a4 4 0 0 1 3.9 4.9l-.9 4.3a2.5 2.5 0 0 1-4.3 1.2L14 15.5h-4l-1.7 1.9A2.5 2.5 0 0 1 4 16.2l-.9-4.3A4 4 0 0 1 7 7z"/><path d="M8 10v3M6.5 11.5h3"/><circle cx="15.5" cy="10.5" r=".6"/><circle cx="17.5" cy="12.5" r=".6"/>',
+  books: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 7h7"/>',
+  films: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M17 9h4M3 15h4M17 15h4"/>',
+  filaments: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3a9 9 0 0 1 9 9"/><path d="M5.6 18.4 9.9 14"/>',
+  "small-parts": '<path d="M12 2.5 20 7v10l-8 4.5L4 17V7z"/><circle cx="12" cy="12" r="3"/>'
+};
+
+function managementIcon(view, fallback) {
+  const icon = document.createElement("span");
+  icon.setAttribute("aria-hidden", "true");
+  if (!MANAGEMENT_ICONS[view]) {
+    icon.textContent = fallback || "▤";
+    return icon;
+  }
+  icon.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${MANAGEMENT_ICONS[view]}</svg>`;
+  return icon;
+}
+
+function populateManagementMenu() {
+  const managementViews = [...document.querySelectorAll(".app-view[data-management-view]")];
+  elements.managementMenu.replaceChildren(...managementViews.map((section) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "management-menu-link";
+    button.dataset.view = section.dataset.managementView;
+    const icon = managementIcon(section.dataset.managementView, section.dataset.managementIcon);
+    button.append(icon, document.createTextNode(section.dataset.managementLabel || section.dataset.managementView));
+    return button;
+  }));
+}
+
+populateManagementMenu();
 
 function applyTheme(theme, persistChoice = false) {
   const selectedTheme = theme === "light" ? "light" : "dark";
@@ -182,11 +172,17 @@ function loadState() {
       syncId,
       supabaseUrl: typeof saved.supabaseUrl === "string" ? saved.supabaseUrl : "",
       supabaseKey: typeof saved.supabaseKey === "string" ? saved.supabaseKey : "",
-      records: Array.isArray(saved.records) ? saved.records.filter(isValidRecord) : []
+      records: Array.isArray(saved.records) ? saved.records.filter(isValidRecord) : [],
+      deviceInventory: isValidDeviceInventory(saved.deviceInventory) ? saved.deviceInventory : null,
+      gameInventory: isValidGameInventory(saved.gameInventory) ? saved.gameInventory : null,
+      bookInventory: isValidBookInventory(saved.bookInventory) ? saved.bookInventory : null,
+      filmInventory: isValidFilmInventory(saved.filmInventory) ? saved.filmInventory : null,
+      filamentInventory: isValidFilamentInventory(saved.filamentInventory) ? saved.filamentInventory : null,
+      smallPartsInventory: isValidSmallPartsInventory(saved.smallPartsInventory) ? saved.smallPartsInventory : null
     };
   } catch (error) {
     console.error("Could not load local Katalogic data.", error);
-    return { syncId: crypto.randomUUID(), supabaseUrl: "", supabaseKey: "", records: [] };
+    return { syncId: crypto.randomUUID(), supabaseUrl: "", supabaseKey: "", records: [], gameInventory: null, bookInventory: null, filmInventory: null, filamentInventory: null, smallPartsInventory: null };
   }
 }
 
@@ -202,6 +198,7 @@ function isValidRecord(record) {
     typeof record.notes === "string" &&
     (record.barcode === undefined || typeof record.barcode === "string") &&
     (record.location === undefined || typeof record.location === "string") &&
+    (record.deviceDetails === undefined || typeof record.deviceDetails === "string") &&
     (record.imageUrl === undefined || typeof record.imageUrl === "string") &&
     (record.imageUrls === undefined || (Array.isArray(record.imageUrls) &&
       record.imageUrls.length <= MAX_ITEM_PHOTOS &&
@@ -213,23 +210,256 @@ function isValidRecord(record) {
       !Array.isArray(record.gameDetails) && Object.values(record.gameDetails).every((value) => typeof value === "string")));
 }
 
-function updateAccessoryControls() {
-  elements.accessoryField.classList.toggle("hidden", elements.itemCategory.value !== "Geräte");
-  elements.accessoryField.querySelectorAll("[data-accessory]").forEach((button) => {
-    const active = button.dataset.accessory === elements.accessoryType.value;
-    button.setAttribute("aria-pressed", String(active));
-    button.classList.toggle("button-primary", active);
-    button.classList.toggle("button-secondary", !active);
-  });
+function isValidDeviceInventory(inventory) {
+  const isString = (value) => typeof value === "string";
+  const validRow = (entry) => entry && typeof entry === "object" && isString(entry.id);
+  return inventory === undefined || inventory === null || (
+    inventory && typeof inventory === "object" && !Array.isArray(inventory) &&
+    ["devices", "cables", "controllers", "accessories", "photos", "checks", "requiredFields"].every((key) => Array.isArray(inventory[key])) &&
+    inventory.customCatalog && typeof inventory.customCatalog === "object" && !Array.isArray(inventory.customCatalog) &&
+    inventory.devices.every((device) => validRow(device) && isString(device.name) &&
+      (device.technical === undefined || (device.technical && typeof device.technical === "object" &&
+        !Array.isArray(device.technical) && Object.values(device.technical).every(isString))) &&
+      (device.customTechnical === undefined || (Array.isArray(device.customTechnical) &&
+        device.customTechnical.every((entry) => entry && isString(entry.key) && isString(entry.value)))) &&
+      (device.quantity === undefined || (Number.isInteger(device.quantity) && device.quantity > 0))) &&
+    inventory.cables.every((entry) => validRow(entry) && isString(entry.deviceId)) &&
+    inventory.controllers.every((entry) => validRow(entry) && isString(entry.deviceId)) &&
+    inventory.accessories.every((entry) => validRow(entry) && Array.isArray(entry.deviceIds) && entry.deviceIds.every(isString)) &&
+    inventory.photos.every((entry) => validRow(entry) && isString(entry.deviceId) && isString(entry.kind) &&
+      typeof entry.dataUrl === "string" && /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(entry.dataUrl)) &&
+    inventory.checks.every((entry) => validRow(entry) && isString(entry.deviceId))
+  );
 }
 
-elements.accessoryField.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-accessory]");
-  if (!button) return;
-  // Erneutes Antippen hebt die Auswahl wieder auf.
-  elements.accessoryType.value = elements.accessoryType.value === button.dataset.accessory ? "" : button.dataset.accessory;
-  updateAccessoryControls();
-});
+function isValidGameInventory(inventory) {
+  const isString = (value) => typeof value === "string";
+  const validRow = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && isString(entry.id);
+  const validGame = (game) => validRow(game) && isString(game.name) &&
+    (game.quantity === undefined || (Number.isInteger(game.quantity) && game.quantity > 0)) &&
+    ["subtitle", "category", "type", "platform", "developer", "publisher", "genre", "language", "region",
+      "releaseDate", "barcode", "sku", "description", "condition", "functionality", "completeness",
+      "purchaseDate", "source", "location", "mediaCondition", "packaging", "manual", "updatedAt"]
+      .every((key) => game[key] === undefined || isString(game[key])) &&
+    ["purchasePrice", "estimatedValue"].every((key) => game[key] === undefined || game[key] === null ||
+      (typeof game[key] === "number" && Number.isFinite(game[key]) && game[key] >= 0)) &&
+    (game.photos === undefined || (Array.isArray(game.photos) && game.photos.length <= 8 &&
+      game.photos.every((photo) => typeof photo === "string" && photo.length <= 700_000 &&
+        /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(photo)))) &&
+    (game.specifics === undefined || (game.specifics && typeof game.specifics === "object" &&
+      !Array.isArray(game.specifics) && Object.values(game.specifics).every(isString))) &&
+    (game.customFields === undefined || (Array.isArray(game.customFields) &&
+      game.customFields.every((entry) => entry && isString(entry.key) && isString(entry.value))));
+  return inventory === undefined || inventory === null || (
+    inventory && typeof inventory === "object" && !Array.isArray(inventory) &&
+    Array.isArray(inventory.games) && Array.isArray(inventory.accessories) &&
+    inventory.customOptions && typeof inventory.customOptions === "object" && !Array.isArray(inventory.customOptions) &&
+    Object.values(inventory.customOptions).every((values) => Array.isArray(values) && values.every(isString)) &&
+    (inventory.view === undefined || inventory.view === "grid" || inventory.view === "list") &&
+    inventory.games.every(validGame) &&
+    new Set(inventory.games.map((game) => game.id)).size === inventory.games.length &&
+    inventory.accessories.every((entry) => validRow(entry) && isString(entry.name) &&
+      Array.isArray(entry.gameIds) && entry.gameIds.every((gameId) => isString(gameId) &&
+        inventory.games.some((game) => game.id === gameId)) &&
+      (entry.quantity === undefined || (Number.isInteger(entry.quantity) && entry.quantity > 0))) &&
+    new Set(inventory.accessories.map((entry) => entry.id)).size === inventory.accessories.length
+  );
+}
+
+function isValidBookInventory(inventory) {
+  const isString = (value) => typeof value === "string";
+  const validRow = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && isString(entry.id);
+  const validBook = (book) => validRow(book) && isString(book.title) &&
+    ["subtitle", "editor", "publisher", "year", "publishDate", "edition", "seriesId", "volume",
+      "category", "subcategory", "genre", "format", "binding", "isbn10", "isbn13", "ean", "language",
+      "originalLanguage", "translator", "illustrator", "blurb", "notes", "condition", "readingStatus",
+      "location", "purchaseDate", "source", "review", "updatedAt"]
+      .every((key) => book[key] === undefined || isString(book[key])) &&
+    (book.authors === undefined || (Array.isArray(book.authors) && book.authors.every(isString))) &&
+    (book.quantity === undefined || (Number.isInteger(book.quantity) && book.quantity > 0)) &&
+    (book.pages === undefined || book.pages === null || (Number.isInteger(book.pages) && book.pages > 0)) &&
+    (book.rating === undefined || book.rating === null || (Number.isInteger(book.rating) && book.rating >= 1 && book.rating <= 5)) &&
+    ["purchasePrice", "estimatedValue"].every((key) => book[key] === undefined || book[key] === null ||
+      (typeof book[key] === "number" && Number.isFinite(book[key]) && book[key] >= 0)) &&
+    (book.details === undefined || (book.details && typeof book.details === "object" &&
+      !Array.isArray(book.details) && Object.values(book.details).every(isString))) &&
+    (book.loan === undefined || (book.loan && typeof book.loan === "object" && !Array.isArray(book.loan) &&
+      ["borrower", "loanDate", "dueDate", "returnDate"].every((key) => book.loan[key] === undefined || isString(book.loan[key])))) &&
+    (book.relatedBookIds === undefined || (Array.isArray(book.relatedBookIds) && book.relatedBookIds.every(isString))) &&
+    (book.photos === undefined || (Array.isArray(book.photos) && book.photos.length <= 8 &&
+      book.photos.every((photo) => typeof photo === "string" && photo.length <= 700_000 &&
+        /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(photo))));
+  return inventory === undefined || inventory === null || (
+    inventory && typeof inventory === "object" && !Array.isArray(inventory) &&
+    Array.isArray(inventory.books) && Array.isArray(inventory.series) &&
+    inventory.series.every((series) => validRow(series) && isString(series.name)) &&
+    inventory.customOptions && typeof inventory.customOptions === "object" && !Array.isArray(inventory.customOptions) &&
+    Object.values(inventory.customOptions).every((values) => Array.isArray(values) && values.every(isString)) &&
+    (inventory.view === undefined || inventory.view === "grid" || inventory.view === "list") &&
+    inventory.books.every(validBook) &&
+    new Set(inventory.books.map((book) => book.id)).size === inventory.books.length &&
+    new Set(inventory.series.map((series) => series.id)).size === inventory.series.length &&
+    inventory.books.every((book) => !book.seriesId || inventory.series.some((series) => series.id === book.seriesId)) &&
+    inventory.books.every((book) => (book.relatedBookIds || []).every((id) => id !== book.id && inventory.books.some((related) => related.id === id)))
+  );
+}
+
+function isValidFilmInventory(inventory) {
+  const isString = (value) => typeof value === "string";
+  const validRow = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && isString(entry.id);
+  const validEntry = (entry) => validRow(entry) && isString(entry.title) &&
+    ["originalTitle", "alternateTitle", "category", "kind", "genre", "year", "releaseDate", "studio",
+      "publisher", "country", "language", "originalLanguage", "rating", "franchise", "part", "edition",
+      "barcode", "condition", "functionality", "completeness", "seriesName", "seasonCompleteness",
+      "seasonMedia", "boxName", "purchaseDate", "source", "location", "description", "updatedAt"]
+      .every((key) => entry[key] === undefined || isString(entry[key])) &&
+    ["directors", "cast", "writers", "producers", "episodes", "customValues"].every((key) =>
+      entry[key] === undefined || (Array.isArray(entry[key]) && entry[key].every(isString))) &&
+    ["runtime", "quantity", "seasonNumber", "episodeCount", "episodeRuntime", "ratingScore"]
+      .every((key) => entry[key] === undefined || entry[key] === null ||
+        (Number.isInteger(entry[key]) && entry[key] >= (key === "ratingScore" ? 1 : 0) && (key !== "ratingScore" || entry[key] <= 5))) &&
+    ["purchasePrice", "estimatedValue"].every((key) => entry[key] === undefined || entry[key] === null ||
+      (typeof entry[key] === "number" && Number.isFinite(entry[key]) && entry[key] >= 0)) &&
+    (entry.details === undefined || (entry.details && typeof entry.details === "object" &&
+      !Array.isArray(entry.details) && Object.values(entry.details).every(isString))) &&
+    (entry.relatedIds === undefined || (Array.isArray(entry.relatedIds) && entry.relatedIds.every(isString))) &&
+    (entry.photos === undefined || (Array.isArray(entry.photos) && entry.photos.length <= 8 &&
+      entry.photos.every((photo) => typeof photo === "string" && photo.length <= 700_000 &&
+        /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(photo))));
+  return inventory === undefined || inventory === null || (
+    inventory && typeof inventory === "object" && !Array.isArray(inventory) &&
+    Array.isArray(inventory.entries) && Array.isArray(inventory.franchises) &&
+    inventory.franchises.every((franchise) => validRow(franchise) && isString(franchise.name)) &&
+    inventory.customOptions && typeof inventory.customOptions === "object" && !Array.isArray(inventory.customOptions) &&
+    Object.values(inventory.customOptions).every((values) => Array.isArray(values) && values.every(isString)) &&
+    (inventory.view === undefined || inventory.view === "grid" || inventory.view === "list") &&
+    inventory.entries.every(validEntry) &&
+    new Set(inventory.entries.map((entry) => entry.id)).size === inventory.entries.length &&
+    new Set(inventory.franchises.map((franchise) => franchise.id)).size === inventory.franchises.length &&
+    inventory.entries.every((entry) => (entry.relatedIds || []).every((id) =>
+      id !== entry.id && inventory.entries.some((related) => related.id === id)))
+  );
+}
+
+function isValidFilamentInventory(inventory) {
+  const isString = (value) => typeof value === "string";
+  const validRow = (entry) => entry && typeof entry === "object" && !Array.isArray(entry) && isString(entry.id);
+  const validOptions = (value) => value && typeof value === "object" && !Array.isArray(value) &&
+    Object.values(value).every((options) => Array.isArray(options) && options.every(isString));
+  const validProduct = (product) => validRow(product) && isString(product.name) &&
+    ["manufacturer", "materialType", "variant", "diameter", "color", "manufacturerColor", "colorHex",
+      "sku", "spoolType", "spoolMaterial", "manufacturedDate", "shelfLife", "datasheetUrl"]
+      .every((key) => product[key] === undefined || isString(product[key])) &&
+    (product.photo === undefined || product.photo === "" ||
+      (isString(product.photo) && product.photo.length <= 700_000 &&
+        /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(product.photo))) &&
+    ["netWeightG", "emptySpoolWeightG", "fullWeightG", "spoolDiameterMm", "spoolWidthMm"]
+      .every((key) => product[key] === undefined || product[key] === null ||
+        (typeof product[key] === "number" && Number.isFinite(product[key]) && product[key] >= 0)) &&
+    (product.technical === undefined || (product.technical && typeof product.technical === "object" &&
+      !Array.isArray(product.technical) && Object.values(product.technical).every(isString))) &&
+    (product.customTechnical === undefined || (Array.isArray(product.customTechnical) &&
+      product.customTechnical.every((entry) => entry && isString(entry.key) && isString(entry.value) && isString(entry.unit))));
+  const validSpool = (spool) => validRow(spool) && isString(spool.productId) &&
+    ["lotNumber", "purchaseDate", "dealer", "location", "container", "storageStatus",
+      "lastDriedDate", "humidityStatus", "notes", "state", "createdAt", "updatedAt", "printerLink", "profileLink"]
+      .every((key) => spool[key] === undefined || isString(spool[key])) &&
+    ["originalNetWeightG", "remainingG", "weighedTotalG", "humidityPercent", "lowStockThresholdG",
+      "dryingTemperatureC", "dryingDurationHours"].every((key) => spool[key] === undefined || spool[key] === null ||
+        (typeof spool[key] === "number" && Number.isFinite(spool[key]) && spool[key] >= 0)) &&
+    (spool.consumptions === undefined || (Array.isArray(spool.consumptions) &&
+      spool.consumptions.every((entry) => validRow(entry) && isString(entry.date) &&
+        typeof entry.grams === "number" && Number.isFinite(entry.grams) && entry.grams > 0 &&
+        (entry.project === undefined || isString(entry.project))))) &&
+    (spool.spoolPhoto === undefined || spool.spoolPhoto === "" ||
+      (isString(spool.spoolPhoto) && spool.spoolPhoto.length <= 700_000 &&
+        /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(spool.spoolPhoto)));
+  const validProfile = (profile) => validRow(profile) &&
+    ["manufacturer", "materialType", "variant", "name", "printer", "notes"].every((key) => profile[key] === undefined || isString(profile[key])) &&
+    profile.settings && typeof profile.settings === "object" && !Array.isArray(profile.settings) &&
+    Object.values(profile.settings).every(isString);
+  const validAmsUnits = inventory == null || inventory.amsUnits === undefined || (
+    Array.isArray(inventory.amsUnits) && Array.isArray(inventory.spools) && inventory.amsUnits.every((unit) =>
+      validRow(unit) && ["AMS 2 Pro", "AMS Lite", "AMS", "AMS HT", "Benutzerdefiniert"].includes(unit.model) &&
+      isString(unit.name) && isString(unit.printer) && Array.isArray(unit.slots) &&
+      (unit.model === "Benutzerdefiniert"
+        ? unit.slots.length >= 1 && unit.slots.length <= 16
+        : unit.slots.length === (unit.model === "AMS HT" ? 1 : 4)) &&
+      unit.slots.every((spoolId) => spoolId === null || (isString(spoolId) &&
+        inventory.spools.some((spool) => spool.id === spoolId)))
+    ) &&
+    new Set(inventory.amsUnits.map((unit) => unit.id)).size === inventory.amsUnits.length &&
+    new Set(inventory.amsUnits.flatMap((unit) => unit.slots).filter(Boolean)).size ===
+      inventory.amsUnits.flatMap((unit) => unit.slots).filter(Boolean).length
+  );
+  return inventory === undefined || inventory === null || (
+    inventory && typeof inventory === "object" && !Array.isArray(inventory) &&
+    Array.isArray(inventory.products) && Array.isArray(inventory.spools) && Array.isArray(inventory.profiles) &&
+    validOptions(inventory.customOptions) && (inventory.view === undefined || inventory.view === "grid" || inventory.view === "list") &&
+    inventory.products.every(validProduct) && inventory.spools.every(validSpool) && inventory.profiles.every(validProfile) &&
+    new Set(inventory.products.map((product) => product.id)).size === inventory.products.length &&
+    new Set(inventory.spools.map((spool) => spool.id)).size === inventory.spools.length &&
+    new Set(inventory.profiles.map((profile) => profile.id)).size === inventory.profiles.length &&
+    validAmsUnits &&
+    inventory.spools.every((spool) => inventory.products.some((product) => product.id === spool.productId))
+  );
+}
+
+function isValidSmallPartsInventory(inventory) {
+  const string = (value) => typeof value === "string";
+  const row = (value) => value && typeof value === "object" && !Array.isArray(value) && string(value.id);
+  const image = (value) => string(value) && value.length <= 400_000 &&
+    /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(value);
+  const validLocation = (location) => row(location) && string(location.name) && location.name.trim().length > 0 &&
+    string(location.barcode) && location.barcode.trim().length > 0 &&
+    ["parentId", "notes"].every((key) => location[key] === undefined || string(location[key]));
+  const validMovement = (movement) => row(movement) &&
+    ["date", "kind", "note", "project", "user"].every((key) => movement[key] === undefined || string(movement[key])) &&
+    Number.isFinite(Date.parse(movement.date)) &&
+    ["in", "out", "adjustment"].includes(movement.kind) &&
+    Number.isFinite(movement.delta) && movement.delta !== 0 &&
+    (movement.kind !== "in" || movement.delta > 0) &&
+    (movement.kind !== "out" || movement.delta < 0) &&
+    Number.isFinite(movement.quantityAfter) && movement.quantityAfter >= 0;
+  const validItem = (item) => row(item) && string(item.name) && item.name.trim().length > 0 &&
+    ["category", "manufacturer", "partNumber", "description", "locationId", "notes",
+      "createdAt", "updatedAt", "archivedAt"].every((key) => item[key] === undefined || string(item[key])) &&
+    string(item.unit) && item.unit.trim().length > 0 &&
+    string(item.barcode) && item.barcode.trim().length > 0 &&
+    Number.isFinite(item.quantity) && item.quantity >= 0 &&
+    (item.reorderLevel === null || item.reorderLevel === undefined ||
+      (Number.isFinite(item.reorderLevel) && item.reorderLevel >= 0)) &&
+    (item.images === undefined || (Array.isArray(item.images) && item.images.length <= 8 && item.images.every(image))) &&
+    Array.isArray(item.movements) && item.movements.every(validMovement) &&
+    new Set(item.movements.map((movement) => movement.id)).size === item.movements.length &&
+    item.movements.every((movement, index) =>
+      Math.abs(movement.quantityAfter - ((index ? item.movements[index - 1].quantityAfter : 0) + movement.delta)) < 1e-9) &&
+    (item.movements.length
+      ? Math.abs(item.movements.at(-1).quantityAfter - item.quantity) < 1e-9
+      : item.quantity === 0);
+  return inventory === undefined || inventory === null || (
+    inventory && typeof inventory === "object" && !Array.isArray(inventory) &&
+    Array.isArray(inventory.items) && Array.isArray(inventory.locations) &&
+    inventory.items.every(validItem) && inventory.locations.every(validLocation) &&
+    new Set(inventory.items.map((item) => item.id)).size === inventory.items.length &&
+    new Set(inventory.locations.map((location) => location.id)).size === inventory.locations.length &&
+    new Set(inventory.items.map((item) => item.barcode.toLocaleLowerCase("de"))).size === inventory.items.length &&
+    new Set(inventory.locations.map((location) => location.barcode.toLocaleLowerCase("de"))).size === inventory.locations.length &&
+    inventory.items.every((item) => !item.locationId || inventory.locations.some((location) => location.id === item.locationId)) &&
+    inventory.locations.every((location) => !location.parentId ||
+      (location.parentId !== location.id && inventory.locations.some((parent) => parent.id === location.parentId))) &&
+    inventory.locations.every((location) => {
+      const visited = new Set([location.id]);
+      let parent = inventory.locations.find((entry) => entry.id === location.parentId);
+      while (parent) {
+        if (visited.has(parent.id)) return false;
+        visited.add(parent.id);
+        parent = inventory.locations.find((entry) => entry.id === parent.parentId);
+      }
+      return true;
+    })
+  );
+}
 
 const GAME_DETAIL_LABELS = {
   platform: "Plattform",
@@ -246,49 +476,6 @@ const GAME_DETAIL_LABELS = {
   purchaseDate: "Kaufdatum",
   purchasePrice: "Kaufpreis"
 };
-
-function readGameDetails() {
-  return Object.fromEntries(
-    [...elements.gameDetails.querySelectorAll("[data-game-field]")]
-      .map((field) => {
-        const otherInput = elements.gameDetails.querySelector(`[data-game-other="${field.dataset.gameField}"]`);
-        const value = field.value === "__other__" && otherInput ? otherInput.value : field.value;
-        return [field.dataset.gameField, value.trim()];
-      })
-      .filter(([, value]) => value)
-  );
-}
-
-function fillGameDetails(details = {}) {
-  for (const field of elements.gameDetails.querySelectorAll("[data-game-field]")) {
-    const value = typeof details[field.dataset.gameField] === "string" ? details[field.dataset.gameField] : "";
-    const hasOption = field.tagName !== "SELECT" || [...field.options].some((option) => option.value === value);
-    const otherInput = elements.gameDetails.querySelector(`[data-game-other="${field.dataset.gameField}"]`);
-    if (otherInput && value && !hasOption) {
-      field.value = "__other__";
-      otherInput.value = value;
-    } else {
-      field.value = value;
-      if (otherInput) otherInput.value = "";
-    }
-  }
-  updateGameOtherInputs();
-}
-
-function updateGameOtherInputs() {
-  for (const field of elements.gameDetails.querySelectorAll("[data-has-other]")) {
-    const otherInput = elements.gameDetails.querySelector(`[data-game-other="${field.dataset.gameField}"]`);
-    otherInput.classList.toggle("hidden", field.value !== "__other__");
-  }
-}
-
-function updateGameDetailsControls() {
-  const isGame = elements.itemCategory.value === "Spiele";
-  elements.gameDetailsToggle.classList.toggle("hidden", !isGame);
-  elements.gameDetails.classList.toggle("hidden", !isGame || !gameDetailsExpanded);
-  elements.gameDetailsToggle.setAttribute("aria-expanded", String(isGame && gameDetailsExpanded));
-  elements.gameDetailsToggle.textContent = gameDetailsExpanded ? "Spieldetails schließen" : "Spieldetails öffnen";
-}
 
 function formatGameDetails(details = {}) {
   return Object.entries(GAME_DETAIL_LABELS)
@@ -308,6 +495,110 @@ function persist() {
     throw error;
   }
 }
+
+window.KatalogicDeviceStorage = {
+  load() {
+    return structuredClone(state.deviceInventory || {
+      devices: [], cables: [], controllers: [], accessories: [], photos: [], checks: [], customCatalog: {}, requiredFields: []
+    });
+  },
+  save(inventory) {
+    if (!isValidDeviceInventory(inventory)) throw new Error("Ungültiger Gerätebestand.");
+    const previous = state.deviceInventory;
+    state.deviceInventory = inventory;
+    try {
+      persist();
+    } catch (error) {
+      state.deviceInventory = previous;
+      throw error;
+    }
+  }
+};
+
+window.KatalogicGameStorage = {
+  load() {
+    return structuredClone(state.gameInventory || { games: [], accessories: [], customOptions: {} });
+  },
+  save(inventory) {
+    if (!isValidGameInventory(inventory)) throw new Error("Ungültiger Spielebestand.");
+    const previous = state.gameInventory;
+    state.gameInventory = inventory;
+    try {
+      persist();
+    } catch (error) {
+      state.gameInventory = previous;
+      throw error;
+    }
+  }
+};
+
+window.KatalogicBookStorage = {
+  load() {
+    return structuredClone(state.bookInventory || { books: [], series: [], customOptions: {}, view: "grid" });
+  },
+  save(inventory) {
+    if (!isValidBookInventory(inventory)) throw new Error("Ungültiger Bücherbestand.");
+    const previous = state.bookInventory;
+    state.bookInventory = inventory;
+    try {
+      persist();
+    } catch (error) {
+      state.bookInventory = previous;
+      throw error;
+    }
+  }
+};
+
+window.KatalogicFilmStorage = {
+  load() {
+    return structuredClone(state.filmInventory || { entries: [], franchises: [], customOptions: {}, view: "grid" });
+  },
+  save(inventory) {
+    if (!isValidFilmInventory(inventory)) throw new Error("Ungültiger Filmbestand.");
+    const previous = state.filmInventory;
+    state.filmInventory = inventory;
+    try {
+      persist();
+    } catch (error) {
+      state.filmInventory = previous;
+      throw error;
+    }
+  }
+};
+
+window.KatalogicSmallPartsStorage = {
+  load() {
+    return structuredClone(state.smallPartsInventory || { items: [], locations: [] });
+  },
+  save(inventory) {
+    if (!isValidSmallPartsInventory(inventory)) throw new Error("Ungültiger Kleinteilebestand.");
+    const previous = state.smallPartsInventory;
+    state.smallPartsInventory = inventory;
+    try {
+      persist();
+    } catch (error) {
+      state.smallPartsInventory = previous;
+      throw error;
+    }
+  }
+};
+
+window.KatalogicFilamentStorage = {
+  load() {
+    return structuredClone(state.filamentInventory || { products: [], spools: [], profiles: [], customOptions: {}, view: "grid" });
+  },
+  save(inventory) {
+    if (!isValidFilamentInventory(inventory)) throw new Error("Ungültiger Filamentbestand.");
+    const previous = state.filamentInventory;
+    state.filamentInventory = inventory;
+    try {
+      persist();
+    } catch (error) {
+      state.filamentInventory = previous;
+      throw error;
+    }
+  }
+};
 
 function decodeBase64Url(value) {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -370,37 +661,6 @@ function safeImageUrl(value) {
   }
 }
 
-function renderPhotoPreview() {
-  elements.itemPhotosName.textContent = itemPhotos.length
-    ? `${itemPhotos.length} von ${MAX_ITEM_PHOTOS} Fotos ausgewählt`
-    : "Keine Fotos ausgewählt";
-  elements.itemPhotoPreview.replaceChildren();
-  itemPhotos.forEach((photo, index) => {
-    const entry = document.createElement("div");
-    entry.className = "photo-preview-entry";
-    const image = document.createElement("img");
-    image.src = photo;
-    image.alt = `Ausgewähltes Foto ${index + 1}`;
-    const remove = document.createElement("button");
-    remove.className = "icon-button";
-    remove.type = "button";
-    remove.dataset.removePhoto = String(index);
-    remove.setAttribute("aria-label", `Foto ${index + 1} entfernen`);
-    remove.title = "Foto entfernen";
-    remove.textContent = "×";
-    entry.append(image, remove);
-    elements.itemPhotoPreview.append(entry);
-  });
-  const remaining = MAX_ITEM_PHOTOS - itemPhotos.length;
-  elements.itemPhotos.disabled = remaining === 0 || photoProcessing;
-  elements.saveItem.disabled = photoProcessing;
-  elements.cancelEdit.disabled = photoProcessing;
-  elements.itemPhotos.setAttribute("aria-describedby", "photo-message");
-  elements.itemPhotos.setAttribute("title", remaining
-    ? `Noch ${remaining} ${remaining === 1 ? "Foto" : "Fotos"} möglich`
-    : "Maximal 3 Fotos pro Eintrag");
-}
-
 function appendRecordPhotos(container, record) {
   const photos = Array.isArray(record.imageUrls) ? record.imageUrls : [];
   if (photos.length) {
@@ -429,92 +689,29 @@ function appendRecordPhotos(container, record) {
   return true;
 }
 
-async function resizePhoto(file) {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-    throw new Error(`${file.name}: Bitte ein JPEG-, PNG- oder WebP-Bild auswählen.`);
-  }
-  if (file.size > MAX_PHOTO_FILE_SIZE) {
-    throw new Error(`${file.name}: Das Bild darf höchstens 12 MB groß sein.`);
-  }
-  const bitmap = await createImageBitmap(file);
-  try {
-    if (bitmap.width * bitmap.height > 40_000_000) {
-      throw new Error(`${file.name}: Die Bildauflösung ist zu groß.`);
-    }
-    let scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
-    let quality = 0.82;
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-      canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
-      if (!blob) throw new Error(`${file.name}: Das Bild konnte nicht verarbeitet werden.`);
-      if (blob.size <= MAX_STORED_PHOTO_SIZE) {
-        const dataUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.addEventListener("load", () => resolve(reader.result), { once: true });
-          reader.addEventListener("error", () => reject(new Error(`${file.name}: Das Bild konnte nicht gelesen werden.`)), { once: true });
-          reader.readAsDataURL(blob);
-        });
-        return dataUrl;
-      }
-      if (quality > 0.55) quality -= 0.1;
-      else scale *= 0.75;
-    }
-    throw new Error(`${file.name}: Das Bild ließ sich nicht ausreichend verkleinern.`);
-  } finally {
-    bitmap.close();
-  }
-}
-
-async function addSelectedPhotos() {
-  const files = [...elements.itemPhotos.files];
-  elements.itemPhotos.value = "";
-  if (!files.length || photoProcessing) return;
-  const available = MAX_ITEM_PHOTOS - itemPhotos.length;
-  const selectedFiles = files.slice(0, available);
-  const skipped = files.length - selectedFiles.length;
-  if (!selectedFiles.length) {
-    showMessage(elements.photoMessage, `Es sind bereits ${MAX_ITEM_PHOTOS} Fotos ausgewählt.`, false);
-    return;
-  }
-  photoProcessing = true;
-  renderPhotoPreview();
-  showMessage(elements.photoMessage, "Fotos werden vorbereitet …", false);
-  try {
-    const processed = [];
-    for (const file of selectedFiles) processed.push(await resizePhoto(file));
-    itemPhotos.push(...processed);
-    showMessage(elements.photoMessage, `${itemPhotos.length} von ${MAX_ITEM_PHOTOS} Fotos ausgewählt.${skipped ? ` ${skipped} weitere ${skipped === 1 ? "Datei wurde" : "Dateien wurden"} wegen des Limits ignoriert.` : ""}`, false);
-  } catch (error) {
-    console.error("Could not prepare item photos.", error);
-    showMessage(elements.photoMessage, error.message);
-  } finally {
-    photoProcessing = false;
-    renderPhotoPreview();
-  }
-}
-
 function refreshCategoryFilter(records) {
   const selected = elements.categoryFilter.value;
-  const recordCounts = new Map();
-  for (const record of records) {
-    const category = record.category.trim() || "Sonstiges";
-    recordCounts.set(category, (recordCounts.get(category) || 0) + 1);
+  const collections = [
+    ["Geräte", "__view_devices__", state.deviceInventory?.devices?.length || 0],
+    ["Bücher", "__view_books__", state.bookInventory?.books?.length || 0],
+    ["Filme", "__view_films__", state.filmInventory?.entries?.length || 0],
+    ["Spiele", "__view_games__", state.gameInventory?.games?.length || 0],
+    ["Filamente", "__view_filaments__", state.filamentInventory?.spools?.length || 0],
+    ["Kleinteile", "__view_small-parts__", state.smallPartsInventory?.items?.length || 0]
+  ];
+  const collectionOptions = document.createElement("optgroup");
+  collectionOptions.label = "Verwaltungsbereiche";
+  for (const [label, view, count] of collections) {
+    collectionOptions.append(new Option(`${label} (${count})`, view));
   }
-  const categories = [...new Set([
-    ...DEFAULT_CATEGORIES,
-    ...records.map((record) => record.category.trim()).filter(Boolean)
-  ])].sort((a, b) => a.localeCompare(b, "de"));
   elements.categoryFilter.replaceChildren(
     new Option("Sammlung auswählen …", "__choose__"),
-    new Option(`Alle Sammlungen (${records.length})`, "")
+    new Option(`Alle Katalogeinträge (${records.length})`, ""),
+    collectionOptions
   );
-  for (const category of categories) {
-    elements.categoryFilter.add(new Option(`${category} (${recordCounts.get(category) || 0})`, category));
+  if (selected === "" || collections.some(([, view]) => view === selected)) {
+    elements.categoryFilter.value = selected;
   }
-  if (selected === "" || categories.includes(selected)) elements.categoryFilter.value = selected;
 }
 
 function showAppView(view) {
@@ -522,7 +719,12 @@ function showAppView(view) {
   const views = {
     collection: elements.collectionView,
     search: elements.searchView,
-    add: elements.addView,
+    devices: elements.devicesView,
+    books: elements.booksView,
+    films: elements.filmsView,
+    games: elements.gamesView,
+    filaments: elements.filamentsView,
+    "small-parts": elements.smallPartsView,
     barcode: elements.barcodeView,
     sync: elements.syncView
   };
@@ -530,13 +732,37 @@ function showAppView(view) {
     section.classList.toggle("hidden", name !== activeView);
   }
   elements.welcomeIntro.classList.toggle("hidden", activeView !== "home");
-  for (const button of elements.taskbar.querySelectorAll(".taskbar-link")) {
-    const active = button.dataset.view === activeView;
+  const managementViews = [...elements.managementMenu.querySelectorAll("[data-view]")];
+  const inManagement = managementViews.some((button) => button.dataset.view === activeView);
+  elements.managementToggle.classList.toggle("is-active", inManagement);
+  elements.managementToggle.setAttribute("aria-expanded", String(!elements.managementMenu.classList.contains("hidden")));
+  for (const button of [...elements.taskbar.querySelectorAll(".taskbar-link"), ...managementViews]) {
+    const active = button === elements.managementToggle ? inManagement : button.dataset.view === activeView;
     button.classList.toggle("is-active", active);
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   }
+  if (activeView === "collection") render();
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function openCatalogEditor(record) {
+  const managedCategories = new Set(["Geräte", "Spiele", "Bücher", "Filme", "Filamente"]);
+  const categories = [...new Set([
+    ...DEFAULT_CATEGORIES,
+    ...state.records.map((entry) => entry.category.trim()).filter((category) => category && !managedCategories.has(category)),
+    record.category.trim() || "Sonstiges"
+  ])].sort((a, b) => a.localeCompare(b, "de"));
+  elements.catalogEditCategory.replaceChildren(...categories.map((category) => new Option(category, category)));
+  elements.catalogEditName.value = record.name;
+  elements.catalogEditCategory.value = record.category.trim() || "Sonstiges";
+  elements.catalogEditLocation.value = record.location || "";
+  elements.catalogEditBarcode.value = record.barcode || "";
+  elements.catalogEditNotes.value = record.notes || "";
+  editingRecordId = record.id;
+  showMessage(elements.catalogEditMessage, "", false);
+  elements.catalogEditDialog.showModal();
+  elements.catalogEditName.focus();
 }
 
 function renderLibrarySearch() {
@@ -548,21 +774,147 @@ function renderLibrarySearch() {
   }
   const stripZeros = (value) => String(value || "").replace(/^0+/, "");
   const isNumericQuery = /^\d{6,}$/.test(query);
+  let savedGames = [];
+  let deviceData = { devices: [], photos: [] };
+  let bookData = { books: [], series: [] };
+  let filmData = { entries: [], franchises: [] };
+  const searchErrors = [];
+  let filamentData = { products: [], spools: [] };
+  let smallPartsData = { items: [], locations: [] };
+  try {
+    deviceData = window.KatalogicDeviceStorage.load();
+  } catch (error) {
+    console.error("Could not search saved devices.", error);
+    searchErrors.push("Geräte konnten nicht durchsucht werden.");
+  }
+  try {
+    savedGames = window.KatalogicGameStorage.load().games;
+  } catch (error) {
+    console.error("Could not search saved games.", error);
+    searchErrors.push("Spiele konnten nicht durchsucht werden.");
+  }
+  try {
+    bookData = window.KatalogicBookStorage.load();
+  } catch (error) {
+    console.error("Could not search saved books.", error);
+    searchErrors.push("Bücher konnten nicht durchsucht werden.");
+  }
   const matches = state.records.filter((record) => {
     if (record.deletedAt) return false;
     // EAN-13 und UPC-A unterscheiden sich nur durch eine führende Null.
     if (isNumericQuery && record.barcode && stripZeros(record.barcode) === stripZeros(query)) return true;
-    const searchable = [record.name, record.category, record.notes, record.location, record.barcode, ACCESSORY_TYPES[record.accessoryType], formatGameDetails(record.gameDetails)]
+    const searchable = [record.name, record.category, record.notes, record.deviceDetails, record.location, record.barcode, ACCESSORY_TYPES[record.accessoryType], formatGameDetails(record.gameDetails)]
       .filter(Boolean)
       .join(" ")
       .toLocaleLowerCase("de");
     return searchable.includes(query);
   }).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  if (!matches.length) {
-    showMessage(elements.librarySearchMessage, "Nicht in deiner Sammlung gefunden. Du kannst den Artikel unter „Hinzufügen“ suchen oder manuell eintragen.", false);
+  const gameMatches = savedGames.filter((game) => {
+    if (isNumericQuery && game.barcode && stripZeros(game.barcode) === stripZeros(query)) return true;
+    const searchable = [
+      "Spiele", game.name, game.subtitle, game.category, game.type, game.platform, game.developer,
+      game.publisher, game.genre, game.language, game.region, game.barcode, game.sku,
+      game.description, game.location, game.source, game.condition, game.functionality,
+      game.completeness, ...Object.values(game.specifics || {}),
+      ...(game.customFields || []).flatMap((entry) => [entry.key, entry.value])
+    ].filter(Boolean).join(" ").toLocaleLowerCase("de");
+    return searchable.includes(query);
+  }).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  const savedBooks = bookData.books;
+  try {
+    filmData = window.KatalogicFilmStorage.load();
+  } catch (error) {
+    console.error("Could not search saved films.", error);
+    searchErrors.push("Filme konnten nicht durchsucht werden.");
+  }
+  try {
+    filamentData = window.KatalogicFilamentStorage.load();
+  } catch (error) {
+    console.error("Could not search saved filament spools.", error);
+    searchErrors.push("Filamentrollen konnten nicht durchsucht werden.");
+  }
+  try {
+    smallPartsData = window.KatalogicSmallPartsStorage.load();
+  } catch (error) {
+    console.error("Could not search saved small parts.", error);
+    searchErrors.push("Kleinteile konnten nicht durchsucht werden.");
+  }
+  const deviceMatches = deviceData.devices.filter((device) => {
+    const searchable = [
+      "Geräte", device.name, device.category, device.type, device.manufacturer, device.model,
+      device.variant, device.serial, device.inventory, device.color, device.owner, device.location,
+      device.condition, device.functionality, device.packaging, device.receipt, device.notes,
+      device.purchaseDate, device.source, ...Object.values(device.technical || {}),
+      ...(device.customTechnical || []).flatMap((entry) => [entry.key, entry.value]),
+      ...deviceData.cables.filter((entry) => entry.deviceId === device.id).flatMap((entry) => Object.values(entry)),
+      ...deviceData.controllers.filter((entry) => entry.deviceId === device.id).flatMap((entry) => Object.values(entry)),
+      ...deviceData.accessories.filter((entry) => (entry.deviceIds || []).includes(device.id)).flatMap((entry) => Object.values(entry))
+    ].filter(Boolean).join(" ").toLocaleLowerCase("de");
+    return searchable.includes(query);
+  }).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  const seriesNames = new Map(bookData.series.map((series) => [series.id, series.name]));
+  const bookMatches = savedBooks.filter((book) => {
+    if (isNumericQuery && [book.isbn10, book.isbn13, book.ean].some((value) => value && stripZeros(value.replace(/\D/g, "")) === stripZeros(query))) return true;
+    const searchable = [
+      "Bücher", book.title, book.subtitle, ...(book.authors || []), book.editor, book.publisher, book.year,
+      book.edition, seriesNames.get(book.seriesId), book.volume, book.category, book.subcategory,
+      book.genre, book.format, book.binding, book.isbn10, book.isbn13, book.ean, book.language,
+      book.originalLanguage, book.translator, book.illustrator, book.blurb, book.notes,
+      book.condition, book.readingStatus, book.location, book.source, book.review,
+      ...(book.relatedBookIds || []).map((id) => savedBooks.find((related) => related.id === id)?.title || ""),
+      ...Object.values(book.details || {}), ...Object.values(book.loan || {})
+    ].filter(Boolean).join(" ").toLocaleLowerCase("de");
+    return searchable.includes(query);
+  }).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  const franchiseNames = new Map(filmData.franchises.map((franchise) => [franchise.id, franchise.name]));
+  const filmMatches = filmData.entries.filter((film) => {
+    if (isNumericQuery && film.barcode && stripZeros(film.barcode.replace(/\D/g, "")) === stripZeros(query)) return true;
+    const searchable = [
+      "Filme", film.title, film.originalTitle, film.alternateTitle, film.category, film.kind, film.genre,
+      film.year, film.directors, film.cast, film.writers, film.producers, film.studio, film.publisher,
+      film.country, film.language, film.originalLanguage, film.rating, franchiseNames.get(film.franchiseId),
+      film.franchise, film.part, film.edition, film.barcode, film.condition, film.functionality,
+      film.completeness, film.seriesName, film.seasonNumber, film.episodes, film.boxName,
+      film.location, film.source, film.description, film.customValues, ...Object.values(film.details || {})
+    ].flat().filter(Boolean).join(" ").toLocaleLowerCase("de");
+    return searchable.includes(query);
+  }).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  const filamentProducts = new Map(filamentData.products.map((product) => [product.id, product]));
+  const filamentMatches = filamentData.spools.filter((spool) => {
+    const product = filamentProducts.get(spool.productId);
+    if (!product) return false;
+    if (isNumericQuery && [product.sku, spool.lotNumber].some((value) =>
+      value && stripZeros(String(value).replace(/\D/g, "")) === stripZeros(query))) return true;
+    const searchable = [
+      "Filamente", product.manufacturer, product.name, product.materialType, product.variant, product.color,
+      product.manufacturerColor, product.colorHex, product.sku, product.diameter,
+      ...Object.values(product.technical || {}),
+      ...(product.customTechnical || []).flatMap((entry) => [entry.key, entry.value, entry.unit]),
+      spool.id, spool.lotNumber, spool.location, spool.container, spool.storageStatus,
+      spool.humidityStatus, spool.storageNotes, spool.notes, spool.dealer, spool.printerLink,
+      spool.profileLink, spool.state, spool.purchaseDate
+    ].filter(Boolean).join(" ").toLocaleLowerCase("de");
+    return searchable.includes(query);
+  }).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  const smallPartsMatches = smallPartsData.items.filter((item) => {
+    const location = smallPartsData.locations.find((entry) => entry.id === item.locationId);
+    const searchable = [
+      "Kleinteile", item.name, item.category, item.manufacturer, item.partNumber, item.barcode,
+      item.description, item.notes, item.unit, location?.name, item.quantity
+    ].filter(Boolean).join(" ").toLocaleLowerCase("de");
+    return isNumericQuery && item.barcode && stripZeros(item.barcode) === stripZeros(query) || searchable.includes(query);
+  }).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  const totalMatches = matches.length + deviceMatches.length + gameMatches.length + bookMatches.length + filmMatches.length + filamentMatches.length + smallPartsMatches.length;
+  if (!totalMatches) {
+    const noMatches = "Nicht in deinem Bestand gefunden. Prüfe den Suchbegriff oder den Barcode.";
+    showMessage(elements.librarySearchMessage, searchErrors.length ? `${noMatches} ${searchErrors.join(" ")} Prüfe die gespeicherten Daten.` : noMatches, searchErrors.length > 0);
     return;
   }
-  showMessage(elements.librarySearchMessage, `${matches.length} ${matches.length === 1 ? "Eintrag" : "Einträge"} in deiner Sammlung gefunden.`, false);
+  showMessage(
+    elements.librarySearchMessage,
+    `${totalMatches} Treffer in Sammlung, Geräte-, Spiele-, Bücher-, Film-, Filament- und Kleinteilebestand gefunden.${searchErrors.length ? ` ${searchErrors.join(" ")} Prüfe die gespeicherten Daten.` : ""}`,
+    searchErrors.length > 0
+  );
   for (const record of matches) {
     const card = document.createElement("article");
     card.className = "item-card";
@@ -572,10 +924,159 @@ function renderLibrarySearch() {
     const title = document.createElement("h3");
     title.textContent = record.name;
     const details = document.createElement("p");
-    details.textContent = [record.category || "Sonstiges", record.barcode ? `Barcode: ${record.barcode}` : "", record.location ? `Lagerort: ${record.location}` : "", ACCESSORY_TYPES[record.accessoryType], record.notes, formatGameDetails(record.gameDetails)]
+    details.textContent = [record.category || "Sonstiges", record.barcode ? `Barcode: ${record.barcode}` : "", record.location ? `Lagerort: ${record.location}` : "", ACCESSORY_TYPES[record.accessoryType], record.notes, record.deviceDetails ? `Weitere Geräteangaben: ${record.deviceDetails}` : "", formatGameDetails(record.gameDetails)]
       .filter(Boolean)
       .join(" · ");
     copy.append(title, details);
+    card.append(copy);
+    elements.librarySearchResults.append(card);
+  }
+  for (const device of deviceMatches) {
+    const card = document.createElement("article");
+    card.className = "item-card";
+    const photos = deviceData.photos
+      .filter((photo) => photo.deviceId === device.id)
+      .map((photo) => photo.dataUrl);
+    appendRecordPhotos(card, { name: device.name, imageUrls: photos, imageUrl: "" });
+    const copy = document.createElement("div");
+    copy.className = "item-copy";
+    const title = document.createElement("h3");
+    title.textContent = device.name;
+    const details = document.createElement("p");
+    details.textContent = [
+      "Geräte", device.category, device.type, device.manufacturer, device.model, device.variant,
+      device.serial ? `Seriennummer: ${device.serial}` : "",
+      device.inventory ? `Inventarnummer: ${device.inventory}` : "",
+      device.location ? `Standort: ${device.location}` : ""
+    ].filter(Boolean).join(" · ");
+    copy.append(title, details);
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "button button-secondary";
+    open.textContent = "In Geräte öffnen";
+    open.dataset.openDevice = device.id;
+    card.append(copy, open);
+    elements.librarySearchResults.append(card);
+  }
+  for (const game of gameMatches) {
+    const card = document.createElement("article");
+    card.className = "item-card";
+    appendRecordPhotos(card, { name: game.name, imageUrls: game.photos || [], imageUrl: "" });
+    const copy = document.createElement("div");
+    copy.className = "item-copy";
+    const title = document.createElement("h3");
+    title.textContent = game.name;
+    const details = document.createElement("p");
+    details.textContent = [
+      "Spiele", game.category, game.type, game.platform,
+      game.barcode ? `EAN / ISBN: ${game.barcode}` : "",
+      game.location ? `Lagerort: ${game.location}` : "",
+      game.publisher || game.developer
+    ].filter(Boolean).join(" · ");
+    copy.append(title, details);
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "button button-secondary";
+    open.textContent = "In Spiele öffnen";
+    open.dataset.openGame = game.id;
+    card.append(copy, open);
+    elements.librarySearchResults.append(card);
+  }
+  for (const book of bookMatches) {
+    const card = document.createElement("article");
+    card.className = "item-card";
+    appendRecordPhotos(card, { name: book.title, imageUrls: book.photos || [], imageUrl: "" });
+    const copy = document.createElement("div");
+    copy.className = "item-copy";
+    const title = document.createElement("h3");
+    title.textContent = book.title;
+    const details = document.createElement("p");
+    details.textContent = [
+      "Bücher", book.category, book.format, (book.authors || []).join(", "),
+      book.isbn13 || book.isbn10 || book.ean ? `ISBN / EAN: ${book.isbn13 || book.isbn10 || book.ean}` : "",
+      book.location ? `Standort: ${book.location}` : "",
+      book.publisher
+    ].filter(Boolean).join(" · ");
+    copy.append(title, details);
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "button button-secondary";
+    open.textContent = "In Bücher öffnen";
+    open.dataset.openBook = book.id;
+    card.append(copy, open);
+    elements.librarySearchResults.append(card);
+  }
+  for (const film of filmMatches) {
+    const card = document.createElement("article");
+    card.className = "item-card";
+    appendRecordPhotos(card, { name: film.title, imageUrls: film.photos || [], imageUrl: "" });
+    const copy = document.createElement("div");
+    copy.className = "item-copy";
+    const title = document.createElement("h3");
+    title.textContent = film.title;
+    const details = document.createElement("p");
+    details.textContent = [
+      "Filme", film.category, film.kind, film.format, film.year,
+      film.barcode ? `EAN: ${film.barcode}` : "", film.franchise,
+      film.location ? `Standort: ${film.location}` : ""
+    ].filter(Boolean).join(" · ");
+    copy.append(title, details);
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "button button-secondary";
+    open.textContent = "In Filme öffnen";
+    open.dataset.openFilm = film.id;
+    card.append(copy, open);
+    elements.librarySearchResults.append(card);
+  }
+  for (const spool of filamentMatches) {
+    const product = filamentProducts.get(spool.productId);
+    const card = document.createElement("article");
+    card.className = "item-card";
+    appendRecordPhotos(card, { name: product.name, imageUrls: [], imageUrl: product.photo || spool.spoolPhoto || "" });
+    const copy = document.createElement("div");
+    copy.className = "item-copy";
+    const title = document.createElement("h3");
+    title.textContent = product.name || product.materialType || "Filamentrolle";
+    const details = document.createElement("p");
+    details.textContent = [
+      "Filamente", product.manufacturer, product.materialType, product.variant, product.color,
+      product.sku ? `Artikelnummer: ${product.sku}` : "",
+      spool.lotNumber ? `Charge: ${spool.lotNumber}` : "",
+      spool.remainingG == null ? "Restmenge unbekannt" : `Restmenge: ${spool.remainingG} g`,
+      spool.location ? `Lagerort: ${spool.location}` : ""
+    ].filter(Boolean).join(" · ");
+    copy.append(title, details);
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "button button-secondary";
+    open.textContent = "In Filamenten öffnen";
+    open.dataset.openFilament = spool.id;
+    card.append(copy, open);
+    elements.librarySearchResults.append(card);
+  }
+  for (const item of smallPartsMatches) {
+    const card = document.createElement("article");
+    card.className = "item-card";
+    appendRecordPhotos(card, { name: item.name, imageUrls: item.images || [], imageUrl: "" });
+    const copy = document.createElement("div");
+    copy.className = "item-copy";
+    const title = document.createElement("h3");
+    title.textContent = item.name;
+    const detail = document.createElement("p");
+    const location = smallPartsData.locations.find((entry) => entry.id === item.locationId);
+    detail.textContent = ["Kleinteile", item.category, item.partNumber, item.barcode,
+      `${item.quantity} ${item.unit}`, location?.name].filter(Boolean).join(" · ");
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "button button-secondary";
+    open.textContent = "In Kleinteile öffnen";
+    open.addEventListener("click", () => {
+      showAppView("small-parts");
+      document.querySelector("#small-parts-search").value = item.name;
+      document.querySelector("#small-parts-search").dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    copy.append(title, detail, open);
     card.append(copy);
     elements.librarySearchResults.append(card);
   }
@@ -588,15 +1089,24 @@ function render() {
   const views = {
     collection: elements.collectionView,
     search: elements.searchView,
-    add: elements.addView,
+    devices: elements.devicesView,
+    books: elements.booksView,
+    films: elements.filmsView,
+    games: elements.gamesView,
+    filaments: elements.filamentsView,
     barcode: elements.barcodeView,
     sync: elements.syncView
   };
   for (const [name, section] of Object.entries(views)) {
     section.classList.toggle("hidden", name !== activeView);
   }
-  for (const button of elements.taskbar.querySelectorAll(".taskbar-link")) {
-    const active = activeView !== "home" && button.dataset.view === activeView;
+  const managementViews = [...elements.managementMenu.querySelectorAll("[data-view]")];
+  const inManagement = managementViews.some((button) => button.dataset.view === activeView);
+  elements.managementToggle.classList.toggle("is-active", inManagement);
+  elements.managementToggle.setAttribute("aria-expanded", String(!elements.managementMenu.classList.contains("hidden")));
+  for (const button of [...elements.taskbar.querySelectorAll(".taskbar-link"), ...managementViews]) {
+    const active = activeView !== "home" &&
+      (button === elements.managementToggle ? inManagement : button.dataset.view === activeView);
     button.classList.toggle("is-active", active);
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
@@ -642,6 +1152,7 @@ function render() {
       card.className = "item-card";
       appendRecordPhotos(card, record);
       const notes = record.notes ? `<p>${escapeHtml(record.notes)}</p>` : "";
+      const deviceDetails = record.deviceDetails ? `<p>Weitere Geräteangaben · ${escapeHtml(record.deviceDetails)}</p>` : "";
       const barcode = record.barcode ? `<p class="item-barcode">Barcode · ${escapeHtml(record.barcode)}</p>` : "";
       const location = record.location ? `<p class="item-location">Lagerort · ${escapeHtml(record.location)}</p>` : "";
       const accessory = ACCESSORY_TYPES[record.accessoryType] ? `<p class="item-location">${escapeHtml(ACCESSORY_TYPES[record.accessoryType])}</p>` : "";
@@ -651,13 +1162,17 @@ function render() {
       const sourceLink = source ? `<a class="source-link" href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Quelldaten ↗</a>` : "";
       const copy = document.createElement("div");
       copy.className = "item-copy";
-      copy.innerHTML = `<h3>${escapeHtml(record.name)}</h3>${notes}${location}${accessory}${barcode}${gameDetailsMarkup}${sourceLink}`;
+      copy.innerHTML = `<h3>${escapeHtml(record.name)}</h3>${notes}${deviceDetails}${location}${accessory}${barcode}${gameDetailsMarkup}${sourceLink}`;
       card.append(copy);
+      const managedCategory = ["Geräte", "Spiele", "Bücher", "Filme"].includes(record.category);
+      const editAction = !managedCategory && !record.deviceDetails && !record.accessoryType
+            ? `<button class="icon-button" type="button" data-edit="${escapeHtml(record.id)}" aria-label="Eintrag ${escapeHtml(record.name)} bearbeiten" title="Bearbeiten">✎</button>`
+            : "";
       card.insertAdjacentHTML("beforeend", `
-        <div class="item-actions">
-          <button class="icon-button" type="button" data-edit="${escapeHtml(record.id)}" aria-label="Eintrag ${escapeHtml(record.name)} bearbeiten" title="Bearbeiten">✎</button>
-          <button class="icon-button" type="button" data-delete="${escapeHtml(record.id)}" aria-label="Eintrag ${escapeHtml(record.name)} löschen" title="Löschen">×</button>
-        </div>`);
+            <div class="item-actions">
+              ${editAction}
+              <button class="icon-button" type="button" data-delete="${escapeHtml(record.id)}" aria-label="Eintrag ${escapeHtml(record.name)} löschen" title="Löschen">×</button>
+            </div>`);
       group.append(card);
     }
     elements.itemList.append(group);
@@ -775,328 +1290,26 @@ async function synchronize() {
   }
 }
 
-let lookupCandidates = [];
-
-function makeBookCandidate(book, barcode = "") {
-  const workKey = typeof book.key === "string" ? book.key : "";
-  const coverId = Number.isInteger(book.cover_i) ? book.cover_i : null;
-  const isbn = Array.isArray(book.isbn) ? book.isbn[0] : barcode;
-  const details = [
-    Array.isArray(book.author_name) ? `Autor: ${book.author_name.join(", ")}` : "",
-    book.first_publish_year ? `Erstveröffentlichung: ${book.first_publish_year}` : "",
-    isbn ? `ISBN: ${isbn}` : ""
-  ].filter(Boolean).join(" · ");
-  return {
-    name: typeof book.title === "string" ? book.title : "Unbekannter Buchtitel",
-    category: "Bücher",
-    notes: details,
-    barcode: barcode || isbn || "",
-    imageUrl: coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg?default=false` : "",
-    sourceUrl: workKey ? `https://openlibrary.org${workKey}` : "",
-    sourceName: "Open Library"
-  };
-}
-
-function inferCategory(text) {
-  const value = String(text || "").toLocaleLowerCase("de");
-  if (/\b(book|buch|isbn|novel|roman|publisher|verlag)\b/.test(value)) return "Bücher";
-  if (/\b(game|spiel|ps[345]|xbox|nintendo|switch|playstation|steam|videogame)\b/.test(value)) return "Spiele";
-  if (/\b(film|movie|dvd|blu.?ray|cinema|serie|season)\b/.test(value)) return "Filme";
-  if (/\b(filament|pla\b|petg|abs\b|tpu\b|resin|kunststoffdraht)\b/.test(value)) return "Filament";
-  if (/\b(laser|engraver|gravier|laser cutter)\b/.test(value)) return "Laser";
-  if (/\b(3d.?printer|3d.?druck|drucker|printer|ender.?[35]|bambu.?lab|prusa)\b/.test(value)) return "3D Drucker";
-  if (/\b(accessor|zubehör|cable|kabel|adapter|nozzle|düse|spare part|ersatzteil)\b/.test(value)) return "Zubehör";
-  if (/\b(electronic|device|gerät|phone|computer|laptop|camera|kamera|tablet|monitor)\b/.test(value)) return "Geräte";
-  if (/\b(part|kleinteil|screw|schraube|bearing|lager|connector|verbinder)\b/.test(value)) return "Kleinteile";
-  return "Sonstiges";
-}
-
-function makeUPCItemCandidate(item, barcode = "") {
-  const name = typeof item.title === "string" ? item.title.trim() : "";
-  if (!name) return null;
-  const details = [
-    item.brand ? `Marke: ${item.brand}` : "",
-    item.model ? `Modell: ${item.model}` : "",
-    item.color ? `Farbe: ${item.color}` : "",
-    item.size ? `Größe: ${item.size}` : "",
-    item.description ? String(item.description).slice(0, 240) : "",
-    item.category ? `Produktgruppe: ${item.category}` : ""
-  ].filter(Boolean);
-  const ean = item.ean || item.upc || barcode;
-  return {
-    name,
-    category: inferCategory(`${item.category || ""} ${name} ${item.brand || ""}`),
-    notes: details.join(" · "),
-    barcode: String(ean || ""),
-    imageUrl: Array.isArray(item.images) ? safeImageUrl(item.images[0]) : "",
-    sourceUrl: safeImageUrl(item.product_link) || (ean ? `https://www.upcitemdb.com/upc/${encodeURIComponent(ean)}` : ""),
-    sourceName: item.provider || "UPCitemdb"
-  };
-}
-
-async function searchUPCItemDb({ barcode = "", query = "" }) {
-  const params = new URLSearchParams(barcode ? { barcode } : { query });
-  const response = await fetch(`/api/products?${params}`);
-  if (response.status === 404) return [];
-  if (!response.ok) throw new Error(`UPCitemdb antwortet mit Status ${response.status}.`);
-  const data = await response.json();
-  if (data.code !== "OK" || !Array.isArray(data.items)) return [];
-  return data.items.slice(0, 8)
-    .map((item) => makeUPCItemCandidate(item, barcode))
-    .filter(Boolean);
-}
-
-async function showSearchProvider() {
-  try {
-    const response = await fetch("/api/search-provider");
-    if (!response.ok) throw new Error(`Provider-Status nicht verfügbar (${response.status}).`);
-    const data = await response.json();
-    elements.searchProviderMessage.textContent = data.provider === "google-shopping"
-      ? "Google Shopping-Suche aktiv."
-      : "Produktsuche aktiv · Google Shopping kann optional auf dem Server eingerichtet werden.";
-  } catch (error) {
-    console.error("Could not load product search provider status.", error);
-    elements.searchProviderMessage.textContent = "Produktsuche verfügbar; optionale Google Shopping API siehe README.";
-  }
-}
-
-async function searchBooks(query, barcode = "") {
-  const params = new URLSearchParams({ limit: "8", fields: "key,title,author_name,first_publish_year,cover_i,isbn" });
-  if (barcode) params.set("isbn", barcode);
-  else params.set("q", query);
-  const response = await fetch(`https://openlibrary.org/search.json?${params}`);
-  if (!response.ok) throw new Error(`Open Library antwortet mit Status ${response.status}.`);
-  const data = await response.json();
-  return (Array.isArray(data.docs) ? data.docs : [])
-    .filter((book) => typeof book.title === "string")
-    .map((book) => makeBookCandidate(book, barcode));
-}
-
-async function searchOpenFoodFacts(barcode) {
-  const fields = "code,product_name,product_name_de,brands,quantity,categories,image_front_url";
-  const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${fields}`);
-  if (response.status === 404) return [];
-  if (!response.ok) throw new Error(`Open Food Facts antwortet mit Status ${response.status}.`);
-  const data = await response.json();
-  if (data.status !== 1 || !data.product) return [];
-  const product = data.product;
-  const name = product.product_name_de || product.product_name;
-  if (typeof name !== "string" || !name.trim()) return [];
-  const notes = [
-    product.brands ? `Marke: ${product.brands}` : "",
-    product.quantity ? `Menge: ${product.quantity}` : "",
-    product.categories ? `Produktgruppe: ${String(product.categories).split(",").slice(0, 3).join(", ")}` : ""
-  ].filter(Boolean).join(" · ");
-  return [{
-    name: name.trim(),
-    category: inferCategory(product.categories || name),
-    notes,
-    barcode,
-    imageUrl: safeImageUrl(product.image_front_url),
-    sourceUrl: `https://world.openfoodfacts.org/product/${encodeURIComponent(barcode)}`,
-    sourceName: "Open Food Facts"
-  }];
-}
-
-function renderLookupResults(candidates) {
-  lookupCandidates = candidates;
-  elements.lookupResults.replaceChildren();
-  for (const [index, candidate] of candidates.entries()) {
-    const card = document.createElement("article");
-    card.className = "lookup-result";
-    const imageUrl = safeImageUrl(candidate.imageUrl);
-    if (imageUrl) {
-      const image = document.createElement("img");
-      image.src = imageUrl;
-      image.alt = "";
-      image.loading = "lazy";
-      image.referrerPolicy = "no-referrer";
-      card.append(image);
-    }
-    const copy = document.createElement("div");
-    copy.className = "lookup-result-copy";
-    const title = document.createElement("h4");
-    title.textContent = candidate.name;
-    const details = document.createElement("p");
-    details.textContent = [candidate.category, candidate.notes, candidate.sourceName].filter(Boolean).join(" · ");
-    copy.append(title, details);
-    const select = document.createElement("button");
-    select.className = "button button-secondary";
-    select.type = "button";
-    select.dataset.candidateIndex = String(index);
-    select.textContent = "Übernehmen";
-    card.append(copy, select);
-    elements.lookupResults.append(card);
-  }
-}
-
-async function runLookup({ barcode = "", query = "" }) {
-  showMessage(elements.lookupMessage, "Suche in offenen Produktdatenbanken …", false);
-  elements.lookupResults.replaceChildren();
-  const normalizedBarcode = barcode.trim().replace(/[\s-]/g, "");
-  const searchTerm = normalizedBarcode || query.trim();
-  if (searchTerm) {
-    elements.googleFallback.classList.remove("hidden");
-    elements.googleFallbackLabel.textContent = normalizedBarcode
-      ? `Zusätzlich im Web nach Barcode ${normalizedBarcode} suchen:`
-      : "Noch nicht das Richtige gefunden?";
-    const googleUrl = new URL("https://www.google.com/search");
-    googleUrl.searchParams.set("q", normalizedBarcode || query.trim());
-    elements.googleSearchLink.href = googleUrl.href;
-    elements.googleShoppingLink.classList.toggle("hidden", !normalizedBarcode);
-    if (normalizedBarcode) {
-      googleUrl.searchParams.set("tbm", "shop");
-      elements.googleShoppingLink.href = googleUrl.href;
-    }
-  } else {
-    elements.googleFallback.classList.add("hidden");
-  }
-  const numericBarcode = /^\d{8,14}$/.test(normalizedBarcode);
-  const isIsbn = /^(?:\d{9}[\dX]|\d{13})$/i.test(normalizedBarcode);
-  if (barcode && !numericBarcode && !/^\d{9}[\dX]$/i.test(normalizedBarcode)) {
-    showMessage(elements.lookupMessage, "Bitte einen gültigen Barcode (8–14 Ziffern) oder eine 10-/13-stellige ISBN eingeben.");
-    return;
-  }
-
-  const lookups = [];
-  const selectedCategory = elements.lookupCategory.value;
-  if (query.trim()) {
-    lookups.push(searchUPCItemDb({ query: query.trim() })
-      .then((results) => ({ source: "products", results })));
-  }
-  if (query.trim() || (barcode && isIsbn)) {
-    if (!selectedCategory || selectedCategory === "Bücher") {
-      lookups.push(searchBooks(query.trim(), barcode && isIsbn ? normalizedBarcode : "")
-        .then((results) => ({ source: "books", results })));
-    }
-  }
-  if (barcode && numericBarcode) {
-    lookups.push(searchOpenFoodFacts(normalizedBarcode).then((results) => ({ source: "products", results })));
-    lookups.push(searchUPCItemDb({ barcode: normalizedBarcode })
-      .then((results) => ({ source: "barcode-products", results })));
-  }
-  if (!lookups.length) {
-    showMessage(elements.lookupMessage, "Gib eine ISBN, einen Barcode oder einen Buchtitel ein.");
-    return;
-  }
-
-  const settled = await Promise.allSettled(lookups);
-  const results = settled.filter((entry) => entry.status === "fulfilled")
-    .flatMap((entry) => entry.value.results)
-    .map((candidate) => ({
-      ...candidate,
-      category: selectedCategory || candidate.category || "Sonstiges"
-    }))
-    .filter((candidate, index, all) =>
-      all.findIndex((other) => other.name.toLocaleLowerCase("de") === candidate.name.toLocaleLowerCase("de") &&
-        other.barcode === candidate.barcode) === index
-    );
-  const failures = settled.filter((entry) => entry.status === "rejected");
-  renderLookupResults(results);
-  if (failures.length) {
-    console.error("Some catalog lookup providers failed.", failures.map((entry) => entry.reason));
-  }
-  if (results.length) {
-    showMessage(elements.lookupMessage, failures.length
-      ? `${results.length} Treffer gefunden; eine Quelle ist nicht erreichbar, die Ergebnisse können unvollständig sein.`
-      : `${results.length} Treffer gefunden. Wähle einen passenden Eintrag zum Übernehmen.`, Boolean(failures.length));
-  } else if (failures.length) {
-    showMessage(elements.lookupMessage, "Die Suche ist fehlgeschlagen. Prüfe die Internetverbindung und versuche es erneut.");
-  } else {
-    showMessage(elements.lookupMessage, barcode
-      ? "Kein Treffer gefunden. Prüfe den Barcode oder ergänze den Eintrag manuell."
-      : "Keine Treffer gefunden. Prüfe den Suchbegriff oder ergänze den Eintrag manuell.");
-  }
-}
-
-function googleSearchUrl(query, shopping = false) {
-  const url = new URL("https://www.google.com/search");
-  url.searchParams.set("q", query);
-  if (shopping) url.searchParams.set("tbm", "shop");
-  return url.href;
-}
-
-function openGoogleSearch(query, tab = null) {
-  const normalized = query.trim();
-  if (!normalized) {
-    showMessage(elements.googleScanMessage, "Bitte zuerst einen Barcode eingeben oder scannen.");
-    return;
-  }
-  const googleUrl = googleSearchUrl(normalized);
-  const target = tab && !tab.closed ? tab : window.open(googleUrl, "_blank");
-  if (target) target.opener = null;
-  if (tab && !tab.closed) tab.location.href = googleUrl;
-  if (!target) {
-    showMessage(elements.googleScanMessage, "Der Browser hat den neuen Tab blockiert. Erlaube Pop-ups für diese App oder nutze den Google-Link unten.");
-  } else {
-    showMessage(elements.googleScanMessage, `Google-Suche für ${normalized} wurde in einem neuen Tab geöffnet.`, false);
-  }
-  updateGoogleFallback(normalized);
-}
-
-function updateGoogleFallback(query) {
-  const normalized = query.trim();
-  if (!normalized) return;
-  elements.googleFallback.classList.remove("hidden");
-  elements.googleFallbackLabel.textContent = `Google-Suche für Barcode ${normalized}:`;
-  elements.googleSearchLink.href = googleSearchUrl(normalized);
-  elements.googleShoppingLink.href = googleSearchUrl(normalized, true);
-  elements.googleShoppingLink.classList.remove("hidden");
-  elements.googleWidgetOpen.href = googleSearchUrl(normalized);
-  elements.googleWidgetSameTab.href = googleSearchUrl(normalized);
-}
-
-function scannerUi(purpose) {
-  return purpose === "library"
-    ? { panel: elements.libraryScannerPanel, video: elements.libraryScannerVideo, message: elements.libraryScannerMessage }
-    : { panel: elements.scannerPanel, video: elements.scannerVideo, message: elements.scannerMessage };
-}
-
 async function stopScanner() {
   if (scannerStream) {
     for (const track of scannerStream.getTracks()) track.stop();
     scannerStream = null;
   }
-  if (pendingGoogleTab) {
-    pendingGoogleTab.close();
-    pendingGoogleTab = null;
-  }
-  for (const purpose of ["lookup", "library"]) {
-    const ui = scannerUi(purpose);
-    ui.video.srcObject = null;
-    ui.panel.classList.add("hidden");
-  }
+  elements.libraryScannerVideo.srcObject = null;
+  elements.libraryScannerPanel.classList.add("hidden");
 }
 
-async function startScanner(purpose = "lookup") {
+async function startScanner() {
   if (scannerStream) await stopScanner();
-  const ui = scannerUi(purpose);
-  const reportScanner = (text, isError = true) => {
-    if (purpose === "google") showMessage(elements.googleScanMessage, text, isError);
-    else showMessage(ui.message, text, isError);
-  };
-  if (purpose === "google") {
-    pendingGoogleTab = window.open("https://www.google.com/search?q=", "_blank");
-    showMessage(elements.googleScanMessage, pendingGoogleTab
-      ? "Kamera gestartet. Barcode in den Rahmen halten …"
-      : "Der Browser hat den neuen Tab blockiert. Erlaube Pop-ups oder nutze das Barcode-Feld.", false);
-  }
+  const reportScanner = (text, isError = true) => showMessage(elements.libraryScannerMessage, text, isError);
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    if (pendingGoogleTab) {
-      pendingGoogleTab.close();
-      pendingGoogleTab = null;
-    }
     reportScanner("Kamerazugriff ist hier nicht verfügbar. Nutze die Barcode-Eingabe oder einen USB-/Bluetooth-Scanner.");
-    ui.panel.classList.remove("hidden");
+    elements.libraryScannerPanel.classList.remove("hidden");
     return;
   }
   if (!("BarcodeDetector" in window)) {
-    if (pendingGoogleTab) {
-      pendingGoogleTab.close();
-      pendingGoogleTab = null;
-    }
     reportScanner("Dieser Browser unterstützt die integrierte Barcode-Erkennung nicht. Nutze die Barcode-Eingabe oder einen USB-/Bluetooth-Scanner.");
-    ui.panel.classList.remove("hidden");
+    elements.libraryScannerPanel.classList.remove("hidden");
     return;
   }
   try {
@@ -1104,34 +1317,21 @@ async function startScanner(purpose = "lookup") {
       video: { facingMode: { ideal: "environment" } },
       audio: false
     });
-    ui.video.srcObject = scannerStream;
-    ui.panel.classList.remove("hidden");
-    await ui.video.play();
+    elements.libraryScannerVideo.srcObject = scannerStream;
+    elements.libraryScannerPanel.classList.remove("hidden");
+    await elements.libraryScannerVideo.play();
     const supported = await BarcodeDetector.getSupportedFormats();
     const formats = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "qr_code"]
       .filter((format) => supported.includes(format));
     if (!formats.length) throw new Error("Dieser Browser unterstützt kein geeignetes Barcode-Format.");
     const detector = new BarcodeDetector({ formats });
-    showMessage(ui.message, purpose === "google"
-      ? "Barcode scannen. Danach öffnet sich Google im neuen Tab …"
-      : "Barcode in den Kamerarahmen halten …", false);
+    showMessage(elements.libraryScannerMessage, "Barcode in den Kamerarahmen halten …", false);
     while (scannerStream) {
-      const hits = await detector.detect(ui.video);
+      const hits = await detector.detect(elements.libraryScannerVideo);
       if (hits.length && hits[0].rawValue) {
-        const code = hits[0].rawValue;
-        const googleTab = purpose === "google" ? pendingGoogleTab : null;
-        pendingGoogleTab = null;
         await stopScanner();
-        if (purpose === "google") {
-          elements.googleBarcodeQuery.value = code;
-          openGoogleSearch(code, googleTab);
-        } else if (purpose === "library") {
-          elements.librarySearchQuery.value = code;
-          renderLibrarySearch();
-        } else {
-          elements.barcodeQuery.value = code;
-          await runLookup({ barcode: code });
-        }
+        elements.librarySearchQuery.value = hits[0].rawValue;
+        renderLibrarySearch();
         return;
       }
       await new Promise((resolve) => setTimeout(resolve, 220));
@@ -1142,94 +1342,62 @@ async function startScanner(purpose = "lookup") {
     reportScanner(error.name === "NotAllowedError"
       ? "Kamerazugriff wurde verweigert. Erlaube den Kamerazugriff oder gib den Barcode manuell ein."
       : `Scanner konnte nicht gestartet werden: ${error.message}`);
-    ui.panel.classList.remove("hidden");
+    elements.libraryScannerPanel.classList.remove("hidden");
   }
 }
-
-function applyCandidate(candidate) {
-  if (editingId) {
-    notify("Beende zuerst die aktuelle Bearbeitung, bevor du einen Suchtreffer übernimmst.");
-    return;
-  }
-  selectedCandidate = candidate;
-  elements.itemName.value = candidate.name;
-  elements.itemCategory.value = candidate.category || "Sonstiges";
-  updateAccessoryControls();
-  gameDetailsExpanded = false;
-  updateGameDetailsControls();
-  elements.itemNotes.value = candidate.notes || "";
-  elements.itemBarcode.value = candidate.barcode || "";
-  elements.selectedPreview.replaceChildren();
-  const imageUrl = safeImageUrl(candidate.imageUrl);
-  if (imageUrl) {
-    const image = document.createElement("img");
-    image.src = imageUrl;
-    image.alt = "";
-    image.referrerPolicy = "no-referrer";
-    elements.selectedPreview.append(image);
-  }
-  const label = document.createElement("span");
-  label.textContent = `Datenquelle: ${candidate.sourceName}`;
-  elements.selectedPreview.append(label);
-  elements.selectedPreview.classList.remove("hidden");
-  showAppView("add");
-  elements.itemForm.scrollIntoView({ behavior: "smooth", block: "center" });
-  elements.itemName.focus();
-}
-
-elements.barcodeForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  void runLookup({ barcode: elements.barcodeQuery.value });
-});
-
-elements.titleSearchForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  void runLookup({ query: elements.titleQuery.value });
-});
 
 elements.librarySearchForm.addEventListener("submit", (event) => {
   event.preventDefault();
   renderLibrarySearch();
 });
 elements.librarySearchQuery.addEventListener("input", renderLibrarySearch);
-elements.libraryStartScanner.addEventListener("click", () => void startScanner("library"));
+elements.libraryStartScanner.addEventListener("click", () => void startScanner());
 elements.libraryStopScanner.addEventListener("click", () => void stopScanner());
-
-elements.lookupResults.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-candidate-index]");
-  if (!button) return;
-  const candidate = lookupCandidates[Number(button.dataset.candidateIndex)];
-  if (candidate) applyCandidate(candidate);
-});
-
-elements.startScanner.addEventListener("click", () => void startScanner("lookup"));
-elements.stopScanner.addEventListener("click", () => void stopScanner());
-elements.googleBarcodeQuery.addEventListener("input", () => {
-  const barcode = elements.googleBarcodeQuery.value.trim();
-  if (!barcode) {
-    elements.googleWidgetOpen.href = "https://www.google.com/search";
-    elements.googleWidgetSameTab.href = "https://www.google.com/search";
-    return;
-  }
-  updateGoogleFallback(barcode);
-  showMessage(elements.googleScanMessage, "Barcode bereit. Tippe auf „Google öffnen“ oder nutze den direkten Link darunter.", false);
-});
-elements.googleWidgetOpen.addEventListener("click", (event) => {
-  const barcode = elements.googleBarcodeQuery.value.trim();
-  if (!barcode) {
-    event.preventDefault();
-    showMessage(elements.googleScanMessage, "Bitte zuerst einen Barcode eingeben oder scannen.");
-    elements.googleBarcodeQuery.focus();
-    return;
-  }
-  updateGoogleFallback(barcode);
-  showMessage(elements.googleScanMessage, "Der Google-Link wird in einem neuen Tab geöffnet. Falls das nicht klappt, nutze den direkten Link darunter.", false);
-});
-elements.googleCameraScan.addEventListener("click", () => void startScanner("google"));
 elements.categoryFilter.addEventListener("change", render);
+elements.categoryFilter.addEventListener("change", () => {
+  const viewByCollection = {
+    __view_devices__: "devices",
+    __view_books__: "books",
+    __view_films__: "films",
+    __view_games__: "games",
+    __view_filaments__: "filaments",
+    "__view_small-parts__": "small-parts"
+  };
+  const view = viewByCollection[elements.categoryFilter.value];
+  if (view) {
+    elements.categoryFilter.value = "__choose__";
+    showAppView(view);
+  }
+});
 elements.taskbar.addEventListener("click", (event) => {
+  const toggle = event.target.closest("[data-management-toggle]");
+  if (toggle) {
+    const isExpanded = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!isExpanded));
+    elements.managementMenu.classList.toggle("hidden", isExpanded);
+    return;
+  }
   const button = event.target.closest(".taskbar-link");
+  const managementButton = event.target.closest("#management-menu [data-view]");
+  if (managementButton) {
+    showAppView(managementButton.dataset.view);
+    elements.managementMenu.classList.add("hidden");
+    elements.managementToggle.setAttribute("aria-expanded", "false");
+    return;
+  }
   if (button) showAppView(button.dataset.view);
+});
+document.addEventListener("click", (event) => {
+  if (!elements.managementNavigation.contains(event.target)) {
+    elements.managementMenu.classList.add("hidden");
+    elements.managementToggle.setAttribute("aria-expanded", "false");
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    elements.managementMenu.classList.add("hidden");
+    elements.managementToggle.setAttribute("aria-expanded", "false");
+  }
 });
 elements.homeLink.addEventListener("click", (event) => {
   event.preventDefault();
@@ -1241,447 +1409,64 @@ elements.welcomeIntro.addEventListener("click", (event) => {
 });
 window.addEventListener("pagehide", () => void stopScanner());
 
-elements.itemForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (photoProcessing) {
-    showMessage(elements.photoMessage, "Warte bitte, bis die Fotoverarbeitung abgeschlossen ist.");
-    return;
-  }
-  const name = elements.itemName.value.trim();
-  if (!name) return;
-  const now = new Date().toISOString();
-  const existing = editingId && state.records.find((record) => record.id === editingId);
-  const category = elements.itemCategory.value.trim();
-  const gameDetails = category === "Spiele" ? readGameDetails() : {};
-  const accessoryType = category === "Geräte" && ACCESSORY_TYPES[elements.accessoryType.value] ? elements.accessoryType.value : undefined;
-  const record = {
-    id: existing ? existing.id : crypto.randomUUID(),
-    name,
-    category,
-    notes: elements.itemNotes.value.trim(),
-    location: elements.itemLocation.value.trim(),
-    barcode: elements.itemBarcode.value.trim(),
-    accessoryType,
-    gameDetails: Object.keys(gameDetails).length ? gameDetails : undefined,
-    imageUrls: itemPhotos.length ? [...itemPhotos] : undefined,
-    imageUrl: selectedCandidate ? safeImageUrl(selectedCandidate.imageUrl) : (existing ? existing.imageUrl || "" : ""),
-    sourceUrl: selectedCandidate ? safeImageUrl(selectedCandidate.sourceUrl) : (existing ? existing.sourceUrl || "" : ""),
-    updatedAt: now,
-    deletedAt: ""
-  };
-  const index = state.records.findIndex((entry) => entry.id === record.id);
-  const previous = index >= 0 ? state.records[index] : null;
-  if (index >= 0) state.records[index] = record;
-  else state.records.push(record);
-  try {
-    persist();
-  } catch {
-    if (previous) state.records[index] = previous;
-    else state.records.pop();
-    showMessage(elements.photoMessage, "Eintrag konnte nicht gespeichert werden. Prüfe den verfügbaren Speicherplatz oder entferne Fotos und versuche es erneut.");
-    return;
-  }
-  activeView = "collection";
-  render();
-  resetItemForm();
-  elements.barcodeQuery.value = "";
-  elements.titleQuery.value = "";
-  elements.lookupResults.replaceChildren();
-  showMessage(elements.lookupMessage, "Eintrag gespeichert.", false);
-  if (state.supabaseUrl && state.supabaseKey) void synchronize();
-});
-
 elements.itemList.addEventListener("click", (event) => {
   const editButton = event.target.closest("[data-edit]");
-  const deleteButton = event.target.closest("[data-delete]");
   if (editButton) {
     const record = state.records.find((entry) => entry.id === editButton.dataset.edit);
-    if (!record) return;
-    editingId = record.id;
-    elements.itemName.value = record.name;
-    if (![...elements.itemCategory.options].some((option) => option.value === record.category)) {
-      elements.itemCategory.add(new Option(record.category, record.category));
-    }
-    elements.itemCategory.value = record.category;
-    elements.itemNotes.value = record.notes;
-    elements.itemLocation.value = record.location || "";
-    elements.itemBarcode.value = record.barcode || "";
-    itemPhotos = Array.isArray(record.imageUrls) ? [...record.imageUrls] : [];
-    renderPhotoPreview();
-    showMessage(elements.photoMessage, itemPhotos.length
-      ? `${itemPhotos.length} von ${MAX_ITEM_PHOTOS} Fotos ausgewählt.`
-      : "", false);
-    fillGameDetails(record.gameDetails);
-    elements.accessoryType.value = ACCESSORY_TYPES[record.accessoryType] ? record.accessoryType : "";
-    updateAccessoryControls();
-    gameDetailsExpanded = false;
-    updateGameDetailsControls();
-    selectedCandidate = null;
-    elements.selectedPreview.replaceChildren();
-    elements.selectedPreview.classList.add("hidden");
-    elements.itemFormHeading.textContent = "Eintrag bearbeiten";
-    elements.saveItem.textContent = "Änderungen speichern";
-    elements.cancelEdit.classList.remove("hidden");
-    showAppView("add");
-    elements.itemName.focus();
-    elements.itemForm.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (record) openCatalogEditor(record);
+    return;
   }
-  if (deleteButton) {
-    const record = state.records.find((entry) => entry.id === deleteButton.dataset.delete);
-    if (!record || !window.confirm(`„${record.name}“ aus dem Katalog löschen?`)) return;
-    record.deletedAt = new Date().toISOString();
-    record.updatedAt = record.deletedAt;
-    persist();
-    render();
-    if (state.supabaseUrl && state.supabaseKey) void synchronize();
-  }
+  const deleteButton = event.target.closest("[data-delete]");
+  if (!deleteButton) return;
+  const record = state.records.find((entry) => entry.id === deleteButton.dataset.delete);
+  if (!record || !window.confirm(`„${record.name}“ aus dem Katalog löschen?`)) return;
+  record.deletedAt = new Date().toISOString();
+  record.updatedAt = record.deletedAt;
+  persist();
+  render();
+  if (state.supabaseUrl && state.supabaseKey) void synchronize();
 });
-
-const OCR_BASE = new URL("vendor/tesseract/", document.baseURI).href;
-const OCR_PLATFORMS = [
-  [/nintendo\s*switch\s*2|switch\s*2\b/i, "Nintendo Switch 2"],
-  [/nintendo\s*switch|switch\s*(?:lite|oled)/i, "Nintendo Switch"],
-  [/play\s*station\s*5|\bps\s?5\b/i, "PlayStation 5"],
-  [/play\s*station\s*4|\bps\s?4\b/i, "PlayStation 4"],
-  [/play\s*station\s*3|\bps\s?3\b/i, "PlayStation 3"],
-  [/play\s*station\s*2|\bps\s?2\b/i, "PlayStation 2"],
-  [/play\s*station\s*vita|\bps\s?vita\b/i, "PlayStation Vita"],
-  [/\bpsp\b/i, "PSP"],
-  [/play\s*station\b/i, "PlayStation"],
-  [/xbox\s*series/i, "Xbox Series X|S"],
-  [/xbox\s*one/i, "Xbox One"],
-  [/xbox\s*360/i, "Xbox 360"],
-  [/\bxbox\b/i, "Xbox"],
-  [/wii\s*u\b/i, "Wii U"],
-  [/\bwii\b/i, "Wii"],
-  [/game\s*cube/i, "GameCube"],
-  [/nintendo\s*64|\bn64\b/i, "Nintendo 64"],
-  [/\b3ds\b/i, "Nintendo 3DS"],
-  [/nintendo\s*ds\b|\bnds\b/i, "Nintendo DS"],
-  [/game\s*boy\s*advance|\bgba\b/i, "Game Boy Advance"],
-  [/game\s*boy\s*color/i, "Game Boy Color"],
-  [/game\s*boy/i, "Game Boy"],
-  [/super\s*nintendo|\bsnes\b/i, "Super Nintendo (SNES)"],
-  [/steam\s*deck/i, "Steam Deck"],
-  [/dreamcast/i, "Sega Dreamcast"],
-  [/windows\s*(?:10|11)|\bpc[\s-]*(?:dvd|cd|spiel|game)|\bfor\s+pc\b|\bpc\b.*\bwindows\b/i, "PC (Windows)"]
-];
-const OCR_EDITIONS = [
-  [/day\s*one/i, "Day One Edition"],
-  [/launch\s*edition/i, "Launch Edition"],
-  [/deluxe/i, "Deluxe Edition"],
-  [/special\s*edition/i, "Special Edition"],
-  [/limited\s*edition|limitierte/i, "Limited Edition"],
-  [/collector/i, "Collector’s Edition"],
-  [/ultimate/i, "Ultimate Edition"],
-  [/game\s*of\s*the\s*year|\bgoty\b/i, "Game of the Year Edition"],
-  [/complete\s*edition/i, "Complete Edition"],
-  [/definitive/i, "Definitive Edition"],
-  [/remaster/i, "Remastered"],
-  [/steelbook/i, "Steelbook Edition"],
-  [/platinum|greatest\s*hits|nintendo\s*selects|essentials/i, "Platinum / Greatest Hits"]
-];
-let ocrWorker = null;
-let ocrWorkerPromise = null;
-let ocrIdleTimer = null;
-let ocrBusy = false;
-
-function isbn10Valid(digits) {
-  if (!/^\d{9}[\dX]$/.test(digits)) return false;
-  const sum = [...digits].reduce((total, char, index) => total + (char === "X" ? 10 : Number(char)) * (10 - index), 0);
-  return sum % 11 === 0;
-}
-
-function gtinValid(digits) {
-  if (!/^\d+$/.test(digits) || ![8, 12, 13].includes(digits.length)) return false;
-  const body = [...digits.slice(0, -1)].reverse();
-  const sum = body.reduce((total, char, index) => total + Number(char) * (index % 2 === 0 ? 3 : 1), 0);
-  return (10 - (sum % 10)) % 10 === Number(digits.at(-1));
-}
-
-function findOcrBarcode(text) {
-  const groups = [...text.matchAll(/\d[\d -]{6,}[\dXx]?/g)].map((match) => match[0].replace(/[^\dXx]/g, "").toUpperCase());
-  for (const group of groups) {
-    for (let start = 0; start + 13 <= group.length; start += 1) {
-      const window = group.slice(start, start + 13);
-      if (gtinValid(window)) return window;
-    }
+elements.catalogEditForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const index = state.records.findIndex((record) => record.id === editingRecordId);
+  if (index < 0) {
+    elements.catalogEditDialog.close();
+    return;
   }
-  for (const group of groups) {
-    for (let start = 0; start + 10 <= group.length; start += 1) {
-      const window = group.slice(start, start + 10);
-      if (isbn10Valid(window)) return window;
-    }
-  }
-  return groups.find((group) => group.length === 12 && gtinValid(group)) || groups.find((group) => group.length === 8 && gtinValid(group)) || "";
-}
-
-function stripPlatformWords(text) {
-  let result = text;
-  for (const [pattern] of OCR_PLATFORMS) result = result.replace(new RegExp(pattern.source, `${pattern.flags.replace("g", "")}g`), " ");
-  return result.replace(/\s+/g, " ").trim();
-}
-
-function isOcrNoiseLine(text) {
-  const trimmed = text.trim();
-  const letters = (trimmed.match(/\p{L}/gu) || []).length;
-  if (letters < 3) return true;
-  if ((trimmed.match(/[\p{L}\p{N}]/gu) || []).length / trimmed.length < 0.6) return true;
-  if (/^(?:pegi|usk|fsk|esrb|cero)\b/i.test(trimmed) || /https?:|www\.|\.(?:de|com)\b/i.test(trimmed)) return true;
-  if (/\d[\d -]{7,}\d/.test(trimmed) || /\d+[.,]\d{2}\s*(?:€|eur)/i.test(trimmed)) return true;
-  return stripPlatformWords(trimmed).replace(/[^\p{L}]/gu, "").length < 3;
-}
-
-function parseOcrText(text, lines) {
-  const result = { gameDetails: {} };
-  const barcode = findOcrBarcode(text);
-  if (barcode) result.barcode = barcode;
-
-  const platform = OCR_PLATFORMS.find(([pattern]) => pattern.test(text));
-  if (platform) result.gameDetails.platform = platform[1];
-  const edition = OCR_EDITIONS.find(([pattern]) => pattern.test(text));
-  if (edition) result.gameDetails.edition = edition[1];
-  if (/\b(?:pegi|usk)\b|\bpal\b/i.test(text)) result.gameDetails.region = "PAL (Europa)";
-  else if (/\besrb\b|ntsc-?u\b/i.test(text)) result.gameDetails.region = "NTSC-U / USA";
-  else if (/\bcero\b|ntsc-?j\b/i.test(text)) result.gameDetails.region = "NTSC-J / Japan";
-
-  if (platform || /\b(?:pegi|usk)\b/i.test(text)) result.category = "Spiele";
-  else if (/\bisbn\b|taschenbuch|hardcover|gebunden|\bverlag\b/i.test(text) || (barcode && /^97[89]/.test(barcode)) || (barcode && barcode.length === 10)) result.category = "Bücher";
-  else if (/blu-?ray|\bdvd\b|ultra\s*hd|\bfsk\b|laufzeit|spieldauer|\bminuten\b/i.test(text)) result.category = "Filme";
-  else if (/filament|\b(?:pla|petg|tpu)\b|1[.,]75\s?mm|2[.,]85\s?mm/i.test(text)) result.category = "Filament";
-
-  const rating = text.match(/\b(USK|FSK|PEGI)\s*(?:ab\s*)?(\d{1,2})\b/i);
-  const year = text.match(/\b(19[7-9]\d|20[0-3]\d)\b/);
-  const notes = [rating ? `${rating[1].toUpperCase()} ${rating[2]}` : "", year ? `Jahr ${year[1]}` : ""].filter(Boolean).join(" · ");
-  if (notes) result.notes = notes;
-
-  const candidates = lines.filter((line) => line.confidence >= 45 && !isOcrNoiseLine(line.text));
-  const best = candidates.reduce((top, line) => {
-    const score = Math.max(1, line.height) * (line.confidence / 100);
-    return !top || score > top.score ? { line, score } : top;
-  }, null);
-  if (best) result.name = stripPlatformWords(best.line.text).slice(0, 120);
-  result.lines = candidates.map((line) => stripPlatformWords(line.text).slice(0, 120)).filter((line, index, all) => line && all.indexOf(line) === index).slice(0, 14);
-  return result;
-}
-
-function loadScriptOnce(src) {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.addEventListener("load", resolve, { once: true });
-    script.addEventListener("error", () => reject(new Error("Die Texterkennung konnte nicht geladen werden.")), { once: true });
-    document.head.append(script);
-  });
-}
-
-function reportOcrProgress(message) {
-  const labels = {
-    "loading tesseract core": "Erkennungsmodul wird geladen …",
-    "initializing tesseract": "Erkennungsmodul wird gestartet …",
-    "loading language traineddata": "Sprachdaten werden geladen …",
-    "initializing api": "Erkennung wird vorbereitet …",
-    "recognizing text": "Text wird erkannt …"
+  const original = state.records[index];
+  const updated = {
+    ...original,
+    name: elements.catalogEditName.value.trim(),
+    category: elements.catalogEditCategory.value.trim(),
+    location: elements.catalogEditLocation.value.trim(),
+    barcode: elements.catalogEditBarcode.value.trim(),
+    notes: elements.catalogEditNotes.value.trim(),
+    updatedAt: new Date().toISOString()
   };
-  if (labels[message.status]) showMessage(elements.ocrMessage, labels[message.status], false);
-  if (message.status === "recognizing text") elements.ocrProgress.value = Math.round(message.progress * 100);
-}
-
-async function getOcrWorker() {
-  clearTimeout(ocrIdleTimer);
-  if (ocrWorker) return ocrWorker;
-  if (!ocrWorkerPromise) {
-    ocrWorkerPromise = (async () => {
-      if (!window.Tesseract) await loadScriptOnce(`${OCR_BASE}tesseract.min.js`);
-      ocrWorker = await window.Tesseract.createWorker(["deu", "eng"], 1, {
-        workerPath: `${OCR_BASE}worker.min.js`,
-        corePath: OCR_BASE,
-        langPath: `${OCR_BASE}lang`,
-        logger: reportOcrProgress
-      });
-      return ocrWorker;
-    })().catch((error) => {
-      ocrWorkerPromise = null;
-      throw error;
-    });
+  if (!updated.name || !updated.category) {
+    showMessage(elements.catalogEditMessage, "Name und Kategorie sind erforderlich.");
+    return;
   }
-  return ocrWorkerPromise;
-}
-
-function releaseOcrWorker() {
-  const worker = ocrWorker;
-  ocrWorker = null;
-  ocrWorkerPromise = null;
-  if (worker) void worker.terminate();
-}
-
-async function prepareOcrImage(file) {
-  let source;
+  state.records[index] = updated;
   try {
-    source = await createImageBitmap(file);
+    persist();
   } catch {
-    throw new Error("Dieses Bildformat wird nicht unterstützt. Nutze JPEG, PNG oder WebP.");
+    state.records[index] = original;
+    showMessage(elements.catalogEditMessage, "Änderungen konnten nicht gespeichert werden.");
+    return;
   }
-  const longest = Math.max(source.width, source.height);
-  const scale = longest > 2200 ? 2200 / longest : longest < 1200 ? Math.min(2, 1600 / longest) : 1;
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(source.width * scale);
-  canvas.height = Math.round(source.height * scale);
-  const context = canvas.getContext("2d");
-  context.fillStyle = "#fff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(source, 0, 0, canvas.width, canvas.height);
-  source.close?.();
-  return canvas;
-}
-
-function collectOcrLines(data) {
-  const lines = [];
-  for (const block of data.blocks || []) {
-    for (const paragraph of block.paragraphs || []) {
-      for (const line of paragraph.lines || []) {
-        const text = (line.text || "").replace(/\s+/g, " ").trim();
-        if (text) lines.push({ text, confidence: line.confidence ?? 0, height: line.bbox ? line.bbox.y1 - line.bbox.y0 : 1 });
-      }
-    }
-  }
-  if (lines.length) return lines;
-  return (data.text || "").split(/\r?\n/).map((text) => text.trim()).filter(Boolean)
-    .map((text) => ({ text, confidence: data.confidence ?? 60, height: 1 }));
-}
-
-function applyOcrResult(result) {
-  const applied = [];
-  if (result.name && !elements.itemName.value.trim()) {
-    elements.itemName.value = result.name;
-    applied.push("Name");
-  }
-  if (result.category && elements.itemCategory.value === "Sonstiges") {
-    elements.itemCategory.value = result.category;
-    updateAccessoryControls();
-    applied.push(`Kategorie (${result.category})`);
-  }
-  if (result.barcode && !elements.itemBarcode.value.trim()) {
-    elements.itemBarcode.value = result.barcode;
-    applied.push("Barcode");
-  }
-  if (result.notes && !elements.itemNotes.value.trim()) {
-    elements.itemNotes.value = result.notes;
-    applied.push("Notiz");
-  }
-  if (elements.itemCategory.value === "Spiele" && Object.keys(result.gameDetails).length) {
-    const current = readGameDetails();
-    const additions = Object.fromEntries(Object.entries(result.gameDetails).filter(([key]) => !current[key]));
-    if (Object.keys(additions).length) {
-      fillGameDetails({ ...current, ...additions });
-      gameDetailsExpanded = true;
-      applied.push(`Spieldetails (${Object.values(additions).join(", ")})`);
-    }
-  }
-  updateGameDetailsControls();
-  return applied;
-}
-
-function renderOcrLines(lines) {
-  elements.ocrLineList.replaceChildren();
-  for (const line of lines) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "ocr-line";
-    button.textContent = line;
-    button.dataset.ocrLine = line;
-    elements.ocrLineList.append(button);
-  }
-  elements.ocrLines.classList.toggle("hidden", !lines.length);
-}
-
-function resetOcrPanel() {
-  elements.ocrFileName.textContent = "Keine Datei ausgewählt";
-  elements.ocrRun.disabled = true;
-  elements.ocrProgress.classList.add("hidden");
-  elements.ocrProgress.value = 0;
-  showMessage(elements.ocrMessage, "", false);
-  renderOcrLines([]);
-}
-
-async function runOcr() {
-  const file = elements.ocrImage.files[0];
-  if (!file || ocrBusy) return;
-  ocrBusy = true;
-  elements.ocrRun.disabled = true;
-  elements.ocrProgress.value = 0;
-  elements.ocrProgress.classList.remove("hidden");
-  renderOcrLines([]);
-  showMessage(elements.ocrMessage, "Bild wird vorbereitet …", false);
-  try {
-    const canvas = await prepareOcrImage(file);
-    const worker = await getOcrWorker();
-    const { data } = await worker.recognize(canvas, {}, { text: true, blocks: true });
-    const text = data.text || "";
-    const result = parseOcrText(text, collectOcrLines(data));
-    const applied = applyOcrResult(result);
-    renderOcrLines(result.lines);
-    showMessage(elements.ocrMessage, applied.length
-      ? `Übernommen: ${applied.join(", ")}. Bitte alle Angaben kurz prüfen.`
-      : text.trim()
-        ? "Es wurden keine leeren Felder gefüllt. Tippe unten auf eine erkannte Zeile, um sie als Name zu übernehmen."
-        : "Kein Text erkannt. Fotografiere näher, gerade und bei guter Beleuchtung.", !applied.length && !text.trim());
-  } catch (error) {
-    console.error("Text recognition failed.", error);
-    releaseOcrWorker();
-    showMessage(elements.ocrMessage, error.message || "Die Texterkennung ist fehlgeschlagen.");
-  } finally {
-    ocrBusy = false;
-    elements.ocrRun.disabled = !elements.ocrImage.files.length;
-    elements.ocrProgress.classList.add("hidden");
-    clearTimeout(ocrIdleTimer);
-    ocrIdleTimer = setTimeout(releaseOcrWorker, 60_000);
-  }
-}
-
-elements.ocrImage.addEventListener("change", () => {
-  elements.ocrFileName.textContent = elements.ocrImage.files.length ? elements.ocrImage.files[0].name : "Keine Datei ausgewählt";
-  elements.ocrRun.disabled = !elements.ocrImage.files.length;
-  if (elements.ocrImage.files.length) void runOcr();
+  elements.catalogEditDialog.close();
+  render();
+  notify("Katalogeintrag aktualisiert.");
+  if (state.supabaseUrl && state.supabaseKey) void synchronize();
 });
-elements.ocrRun.addEventListener("click", () => void runOcr());
-elements.ocrLineList.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-ocr-line]");
-  if (!button) return;
-  elements.itemName.value = button.dataset.ocrLine;
-  elements.itemName.focus();
+elements.catalogEditDialog.querySelector("[data-catalog-edit-cancel]").addEventListener("click", () => {
+  elements.catalogEditDialog.close();
 });
-window.addEventListener("pagehide", releaseOcrWorker);
-
-function resetItemForm() {
-  editingId = null;
-  elements.itemForm.reset();
-  resetOcrPanel();
-  updateAccessoryControls();
-  itemPhotos = [];
-  renderPhotoPreview();
-  showMessage(elements.photoMessage, "", false);
-  gameDetailsExpanded = false;
-  updateGameDetailsControls();
-  selectedCandidate = null;
-  elements.selectedPreview.replaceChildren();
-  elements.selectedPreview.classList.add("hidden");
-  elements.itemFormHeading.textContent = "Etwas hinzufügen";
-  elements.saveItem.textContent = "Eintrag speichern";
-  elements.cancelEdit.classList.add("hidden");
-}
-
-elements.itemPhotos.addEventListener("change", () => void addSelectedPhotos());
-elements.itemPhotoPreview.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-remove-photo]");
-  if (!button) return;
-  itemPhotos.splice(Number(button.dataset.removePhoto), 1);
-  renderPhotoPreview();
-  showMessage(elements.photoMessage, itemPhotos.length
-    ? `${itemPhotos.length} von ${MAX_ITEM_PHOTOS} Fotos ausgewählt.`
-    : "Alle Fotos entfernt.", false);
+elements.catalogEditDialog.addEventListener("close", () => {
+  editingRecordId = null;
+  elements.catalogEditForm.reset();
 });
-
 const CODE128_PATTERNS = [
   "212222", "222122", "222221", "121223", "121322", "131222", "122213", "122312", "132212", "221213",
   "221312", "231212", "112232", "122132", "122231", "113222", "123122", "123221", "223211", "221132",
@@ -2067,6 +1852,13 @@ function buildQrSvg(encoded, caption) {
   return svg;
 }
 
+window.KatalogicBarcodeTools = {
+  svgFor(format, value, caption = "") {
+    const encoded = format === "qr" ? encodeQr(value) : encodeCode128(value);
+    return format === "qr" ? buildQrSvg(encoded, caption) : buildBarcodeSvg(encoded, caption);
+  }
+};
+
 function setBarcodeActions(enabled) {
   elements.barcodeGenShare.hidden = !(navigator.canShare && navigator.share);
   for (const button of [elements.barcodeGenSvg, elements.barcodeGenPng, elements.barcodeGenPrint, elements.barcodeGenShare]) button.disabled = !enabled;
@@ -2195,21 +1987,6 @@ elements.barcodeGenPrint.addEventListener("click", () => {
   frame.contentWindow.print();
 });
 
-elements.cancelEdit.addEventListener("click", resetItemForm);
-elements.itemCategory.addEventListener("change", () => {
-  updateAccessoryControls();
-  gameDetailsExpanded = false;
-  updateGameDetailsControls();
-});
-elements.gameDetailsToggle.addEventListener("click", () => {
-  gameDetailsExpanded = !gameDetailsExpanded;
-  updateGameDetailsControls();
-  if (gameDetailsExpanded) elements.gameDetails.querySelector("[data-game-field='platform']").focus();
-});
-elements.gameDetails.addEventListener("change", (event) => {
-  if (event.target.matches("[data-has-other]")) updateGameOtherInputs();
-});
-
 elements.syncIdForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const syncId = elements.syncId.value.trim().toLowerCase();
@@ -2222,7 +1999,6 @@ elements.syncIdForm.addEventListener("submit", (event) => {
   state.syncId = syncId;
   persist();
   render();
-  renderPhotoPreview();
   showMessage(elements.syncIdMessage, "Sammlungs-ID gespeichert. Auf allen verbundenen Geräten dieselbe ID verwenden.", false);
   if (state.supabaseUrl && state.supabaseKey) void synchronize();
 });
@@ -2237,6 +2013,30 @@ elements.copySyncId.addEventListener("click", async () => {
   }
 });
 
+elements.exportPdf.addEventListener("click", () => {
+  try {
+    if (!window.KatalogicPdfExport) throw new Error("Das PDF-Modul wurde nicht geladen.");
+    const { blob, total, fileName } = window.KatalogicPdfExport.create(state);
+    downloadBlob(blob, fileName);
+    showMessage(elements.backupMessage, `PDF mit ${total} Einträgen erstellt. Das PDF dient nur der Ansicht und kann nicht importiert werden.`, false);
+  } catch (error) {
+    console.error("Could not export PDF.", error);
+    showMessage(elements.backupMessage, `PDF-Export fehlgeschlagen: ${error.message}`);
+  }
+});
+
+elements.exportCharts.addEventListener("click", async () => {
+  try {
+    if (!window.KatalogicChartExport) throw new Error("Das Diagramm-Modul wurde nicht geladen.");
+    const { blob, fileName, count } = await window.KatalogicChartExport.create(state);
+    downloadBlob(blob, fileName);
+    showMessage(elements.backupMessage, `${count} Diagramme als PNG-Bild exportiert.`, false);
+  } catch (error) {
+    console.error("Could not export charts.", error);
+    showMessage(elements.backupMessage, `Diagramm-Export fehlgeschlagen: ${error.message}`);
+  }
+});
+
 elements.exportData.addEventListener("click", () => {
   try {
     const backup = {
@@ -2244,7 +2044,13 @@ elements.exportData.addEventListener("click", () => {
       version: 1,
       exportedAt: new Date().toISOString(),
       syncId: state.syncId,
-      records: state.records
+      records: state.records,
+      deviceInventory: state.deviceInventory,
+      gameInventory: state.gameInventory,
+      bookInventory: state.bookInventory,
+      filmInventory: state.filmInventory,
+      filamentInventory: state.filamentInventory,
+      smallPartsInventory: state.smallPartsInventory
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -2255,7 +2061,14 @@ elements.exportData.addEventListener("click", () => {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showMessage(elements.backupMessage, `${state.records.filter((record) => !record.deletedAt).length} Einträge exportiert. Die Sicherungsdatei vertraulich aufbewahren.`, false);
+    const deviceCount = state.deviceInventory?.devices?.length || 0;
+    const gameCount = state.gameInventory?.games?.length || 0;
+    const bookCount = state.bookInventory?.books?.length || 0;
+    const filmCount = state.filmInventory?.entries?.length || 0;
+    const filamentCount = state.filamentInventory?.spools?.length || 0;
+    const filamentAmsCount = state.filamentInventory?.amsUnits?.length || 0;
+    const smallPartsCount = state.smallPartsInventory?.items?.length || 0;
+    showMessage(elements.backupMessage, `${state.records.filter((record) => !record.deletedAt).length} Einträge, ${deviceCount} Geräte, ${gameCount} Spiele, ${bookCount} Bücher, ${filmCount} Filme, ${filamentCount} Filamentrollen, ${smallPartsCount} Kleinteile und ${filamentAmsCount} AMS-Zuordnungen exportiert. Die Sicherungsdatei vertraulich aufbewahren.`, false);
   } catch (error) {
     console.error("Could not export Katalogic data.", error);
     showMessage(elements.backupMessage, `Export fehlgeschlagen: ${error.message}`);
@@ -2271,7 +2084,13 @@ elements.importDataFile.addEventListener("change", async () => {
     const backup = JSON.parse(await file.text());
     if (backup?.format !== "katalogic-backup" || backup.version !== 1 ||
         !isUuid(backup.syncId) || !Array.isArray(backup.records) ||
-        !backup.records.every(isValidRecord)) {
+        !backup.records.every(isValidRecord) ||
+        (backup.deviceInventory !== undefined && !isValidDeviceInventory(backup.deviceInventory)) ||
+        (backup.gameInventory !== undefined && !isValidGameInventory(backup.gameInventory)) ||
+        (backup.bookInventory !== undefined && !isValidBookInventory(backup.bookInventory)) ||
+        (backup.filmInventory !== undefined && !isValidFilmInventory(backup.filmInventory)) ||
+        (backup.filamentInventory !== undefined && !isValidFilamentInventory(backup.filamentInventory)) ||
+        (backup.smallPartsInventory !== undefined && !isValidSmallPartsInventory(backup.smallPartsInventory))) {
       throw new Error("Die Datei ist keine gültige Katalogic-Sicherung.");
     }
     if (new Set(backup.records.map((record) => record.id)).size !== backup.records.length) {
@@ -2280,12 +2099,31 @@ elements.importDataFile.addEventListener("change", async () => {
     if (!window.confirm("Die aktuell gespeicherte Sammlung wird durch die importierte Sicherung ersetzt. Exportiere vorher eine Sicherung, falls du deine aktuellen Daten behalten möchtest.")) return;
     state.syncId = backup.syncId.toLowerCase();
     state.records = backup.records;
+    if (backup.deviceInventory !== undefined) state.deviceInventory = backup.deviceInventory;
+    if (backup.gameInventory !== undefined) state.gameInventory = backup.gameInventory;
+    if (backup.bookInventory !== undefined) state.bookInventory = backup.bookInventory;
+    if (backup.filmInventory !== undefined) state.filmInventory = backup.filmInventory;
+    if (backup.filamentInventory !== undefined) state.filamentInventory = backup.filamentInventory;
+    if (backup.smallPartsInventory !== undefined) state.smallPartsInventory = backup.smallPartsInventory;
     legacyVaultKey = "";
     needsStateMigration = false;
     persist();
+    window.dispatchEvent(new Event("katalogic:device-inventory-imported"));
+    window.dispatchEvent(new Event("katalogic:game-inventory-imported"));
+    window.dispatchEvent(new Event("katalogic:book-inventory-imported"));
+    window.dispatchEvent(new Event("katalogic:film-inventory-imported"));
+    window.dispatchEvent(new Event("katalogic:filament-inventory-imported"));
+    window.dispatchEvent(new Event("katalogic:small-parts-inventory-imported"));
     render();
     const importedCount = state.records.filter((record) => !record.deletedAt).length;
-    showMessage(elements.backupMessage, `${importedCount} ${importedCount === 1 ? "Eintrag" : "Einträge"} importiert.`, false);
+    const importedDevices = backup.deviceInventory?.devices?.length || 0;
+    const importedGames = backup.gameInventory?.games?.length || 0;
+    const importedBooks = backup.bookInventory?.books?.length || 0;
+    const importedFilms = backup.filmInventory?.entries?.length || 0;
+    const importedFilaments = backup.filamentInventory?.spools?.length || 0;
+    const importedSmallParts = backup.smallPartsInventory?.items?.length || 0;
+    const importedAms = backup.filamentInventory?.amsUnits?.length || 0;
+    showMessage(elements.backupMessage, `${importedCount} ${importedCount === 1 ? "Eintrag" : "Einträge"}, ${importedDevices} Geräte, ${importedGames} Spiele, ${importedBooks} Bücher, ${importedFilms} Filme, ${importedFilaments} Filamentrollen, ${importedSmallParts} Kleinteile und ${importedAms} AMS-Zuordnungen importiert.`, false);
     if (state.supabaseUrl && state.supabaseKey) void synchronize();
   } catch (error) {
     console.error("Could not import Katalogic backup.", error);
@@ -2339,7 +2177,6 @@ try {
 }
 applyTheme(savedTheme);
 render();
-void showSearchProvider();
 if (needsStateMigration) {
   persist();
   needsStateMigration = false;

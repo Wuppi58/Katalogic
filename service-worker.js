@@ -1,12 +1,27 @@
 "use strict";
 
-const CACHE_NAME = "katalogic-static-v43";
-const OCR_CACHE_NAME = "katalogic-ocr-v1";
+const CACHE_NAME = "katalogic-static-v103";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.js",
+  "./styles.css?v=management-2",
+  "./devices.css?v=devices-2",
+  "./games.css?v=games-4",
+  "./books.css?v=books-2",
+  "./films.css?v=films-2",
+  "./filaments.css?v=filaments-2",
+  "./small-parts.css?v=small-parts-2",
+  "./product-recognition.css?v=recognition-5",
+  "./pdf-export.js?v=pdf-2",
+  "./chart-export.js?v=chart-2",
+  "./app.js?v=management-9",
+  "./devices.js?v=devices-5",
+  "./games.js?v=games-6",
+  "./books.js?v=books-6",
+  "./films.js?v=films-4",
+  "./filaments.js?v=filaments-2",
+  "./small-parts.js?v=small-parts-10",
+  "./product-recognition.js?v=recognition-8",
   "./manifest.webmanifest",
   "./icon.svg"
 ];
@@ -19,7 +34,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME && key !== OCR_CACHE_NAME).map((key) => caches.delete(key)))
+      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
@@ -36,18 +51,6 @@ self.addEventListener("fetch", (event) => {
         const appShell = cachedPage || await caches.match("./") || await caches.match("./index.html");
         if (!appShell) throw new Error("Katalogic ist noch nicht für die Offline-Nutzung geladen.");
         return appShell;
-      })
-    );
-    return;
-  }
-  if (requestUrl.pathname.includes("/vendor/tesseract/")) {
-    event.respondWith(
-      caches.open(OCR_CACHE_NAME).then(async (cache) => {
-        const cached = await cache.match(event.request);
-        if (cached) return cached;
-        const response = await fetch(event.request);
-        if (response.ok && response.status === 200) cache.put(event.request, response.clone());
-        return response;
       })
     );
     return;
