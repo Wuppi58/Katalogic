@@ -60,6 +60,9 @@ input::placeholder { color: #a3a59c; }
 .search-row { display: flex; gap: 8px; }
 .search-row input { min-width: 0; }
 .scan-button { min-height: 42px; white-space: nowrap; }
+.management-search-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.management-search-heading label { margin: 0; }
+.management-search-heading .button { flex: 0 0 auto; }
 .scanner-panel { margin-top: 13px; padding: 12px; border-radius: 10px; background: #f1f0e8; }
 .scanner-panel video { display: block; width: 100%; max-height: 280px; border-radius: 7px; background: #20271f; object-fit: cover; }
 .scanner-panel .form-message { margin: 8px 0; }
@@ -69,6 +72,11 @@ input::placeholder { color: #a3a59c; }
 .barcode-actions { margin-top: 14px; }
 .file-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 4px 0; }
 .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+label .localized-file-input { position: absolute; inset: auto; width: 1px; height: 1px; min-height: 0; padding: 0; overflow: hidden; border: 0; opacity: 0; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; }
+.localized-file-picker { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 5px; }
+.localized-file-button { display: inline-flex; align-items: center; cursor: pointer; }
+.localized-file-name { min-width: 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.localized-file-input:focus-visible + .localized-file-picker .localized-file-button { outline: 2px solid currentColor; outline-offset: 2px; }
 .segmented { display: flex; gap: 8px; margin: 6px 0 14px; }
 .segment { flex: 1; }
 .barcode-search { margin-bottom: 16px; }
@@ -270,6 +278,8 @@ footer { padding-block: 19px; background: rgba(255,255,255,.35); }
   .search-row input { font-size: 12px; }
   .search-row .button { flex: 0 0 auto; min-width: 82px; padding-inline: 10px; font-size: 11px; }
   .scan-button { width: 100%; min-height: 46px; margin-top: 4px; }
+  .management-search-heading { align-items: flex-start; flex-direction: column; }
+  .management-search-heading .button { width: 100%; }
   .item-form { padding: 19px 16px; border-radius: 17px; }
   .item-form h3 { margin-bottom: 9px; }
   .field-pair { grid-template-columns: 1fr; gap: 0; }

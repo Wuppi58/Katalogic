@@ -1247,6 +1247,7 @@
     $(selector).addEventListener("change", async (event) => {
       const file = event.target.files[0];
       event.target.value = "";
+      window.updateLocalizedFileInput?.(event.target);
       if (!file) return;
       photoProcessing = true;
       try {

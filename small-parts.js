@@ -313,6 +313,7 @@
     $("#small-parts-editor-heading").textContent = item ? "Kleinteil bearbeiten" : "Kleinteil hinzufügen";
     $("#small-parts-cancel").hidden = !item;
     $("#small-parts-images").value = "";
+    window.updateLocalizedFileInput?.($("#small-parts-images"));
     $("#small-parts-form-message").textContent = "";
     renderImagePreview();
     $("#small-parts-name").focus();
@@ -656,11 +657,13 @@
       editImages.push(...await Promise.all(files.map(resizeImage)));
       renderImagePreview();
       event.target.value = "";
+      window.updateLocalizedFileInput?.(event.target);
       $("#small-parts-form-message").textContent = "";
     } catch (error) {
       $("#small-parts-form-message").textContent = error.message;
       $("#small-parts-form-message").classList.add("error");
       event.target.value = "";
+      window.updateLocalizedFileInput?.(event.target);
     }
   });
   $("#small-parts-cancel").addEventListener("click", () => {

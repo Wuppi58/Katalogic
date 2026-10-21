@@ -1,10 +1,10 @@
 "use strict";
 
-const CACHE_NAME = "katalogic-static-v104";
+const CACHE_NAME = "katalogic-static-v106";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=management-2",
+  "./styles.css?v=management-4",
   "./devices.css?v=devices-2",
   "./games.css?v=games-4",
   "./books.css?v=books-2",
@@ -16,12 +16,14 @@ const APP_SHELL = [
   "./chart-export.js?v=chart-2",
   "./app.js?v=management-9",
   "./devices.js?v=devices-5",
-  "./games.js?v=games-6",
+  "./games.js?v=games-7",
   "./books.js?v=books-6",
   "./films.js?v=films-4",
   "./filaments.js?v=filaments-2",
   "./small-parts.js?v=small-parts-10",
+  "./management-search-scanner.js?v=search-scanner-1",
   "./product-recognition.js?v=recognition-8",
+  "./localize-file-inputs.js?v=file-inputs-1",
   "./manifest.webmanifest",
   "./icon.svg",
   "./icons/icon-192.png",

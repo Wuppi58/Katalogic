@@ -21,6 +21,8 @@ Navigationsleiste bündelt die spezialisierten Bereiche **Geräte**, **Spiele**,
 zeigt gespeicherte allgemeine Einträge und direkte Zugänge zu den Bereichen;
 **Suchen** durchsucht den eigenen Bestand einschließlich Geräten, Spielen,
 Büchern, Filmen, Filamentrollen und Kleinteilen, auch per Kamera-Barcode-Scan.
+Die Suchfelder dieser Verwaltungsbereiche können ebenfalls per Kamera-Barcode-Scan
+befüllt werden; der erkannte Code filtert dann den jeweiligen Bestand.
 Neue Verwaltungsansichten werden mit `data-management-view`,
 `data-management-label` und optional `data-management-icon` am jeweiligen
 `.app-view` markiert und automatisch in das Verwaltungsmenü aufgenommen. Die

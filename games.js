@@ -78,8 +78,6 @@
   let photosDraft = [];
   let specificsDraft = {};
   let editorMode = "create";
-  let scannerStream = null;
-  let scannerRunning = false;
   let photoProcessing = false;
   let activeTab = "";
   let loadWarning = "";
@@ -796,54 +794,6 @@
     }
   }
 
-  async function startScanner() {
-    if (!("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) {
-      report($("#game-scanner-message"), "Dieser Browser unterstützt keinen Kamera-Barcode-Scanner. Gib EAN oder ISBN direkt in die Suche ein.");
-      $("#game-scanner-panel").classList.remove("hidden");
-      return;
-    }
-    try {
-      const formats = await BarcodeDetector.getSupportedFormats();
-      const supported = formats.filter((format) => ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "qr_code", "data_matrix"].includes(format));
-      if (!supported.length) throw new Error("Dieser Browser meldet kein unterstütztes Barcodeformat.");
-      scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
-      const video = $("#game-scanner-video");
-      video.srcObject = scannerStream;
-      await video.play();
-      const detector = new BarcodeDetector({ formats: supported });
-      scannerRunning = true;
-      $("#game-scanner-panel").classList.remove("hidden");
-      report($("#game-scanner-message"), "Halte den Barcode in den Kamerarahmen …", false);
-      while (scannerRunning && scannerStream) {
-        const hits = await detector.detect(video);
-        if (hits[0]?.rawValue) {
-          $("#game-query").value = hits[0].rawValue;
-          renderGames();
-          report($("#game-scanner-message"), `Barcode ${hits[0].rawValue} in der Spielesammlung gesucht.`, false);
-          await stopScanner();
-          return;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 220));
-      }
-    } catch (error) {
-      console.error("Game barcode scanner failed.", error);
-      await stopScanner();
-      $("#game-scanner-panel").classList.remove("hidden");
-      report($("#game-scanner-message"), error.name === "NotAllowedError"
-        ? "Kamerazugriff wurde verweigert. Erlaube den Zugriff oder gib den Barcode direkt ein."
-        : `Scanner konnte nicht gestartet werden: ${error.message}`);
-    }
-  }
-
-  async function stopScanner() {
-    scannerRunning = false;
-    if (scannerStream) {
-      scannerStream.getTracks().forEach((track) => track.stop());
-      scannerStream = null;
-    }
-    $("#game-scanner-video").srcObject = null;
-  }
-
   $("#game-create").addEventListener("click", () => showEditor("create"));
   $("#game-editor-close").addEventListener("click", () => $("#game-editor").classList.add("hidden"));
   $("#game-editor-cancel").addEventListener("click", () => $("#game-editor").classList.add("hidden"));
@@ -889,6 +839,7 @@
   $("#game-photos-input").addEventListener("change", async (event) => {
     const files = [...event.target.files];
     event.target.value = "";
+    window.updateLocalizedFileInput?.(event.target);
     const remaining = 8 - photosDraft.length;
     photoProcessing = true;
     try {
@@ -964,8 +915,6 @@
       report($("#game-result-count"), "Ansicht konnte nicht gespeichert werden.");
     }
   });
-  $("#game-start-scanner").addEventListener("click", () => void startScanner());
-  $("#game-stop-scanner").addEventListener("click", () => void stopScanner());
   $("#library-search-results").addEventListener("click", (event) => {
     const button = event.target.closest("[data-open-game]");
     if (!button) return;
@@ -999,8 +948,6 @@
       report($("#game-result-count"), "Importierte Spieldaten konnten nicht angezeigt werden.");
     }
   });
-  window.addEventListener("pagehide", () => void stopScanner());
-
   for (const selector of ["#inventory-game-condition", "#game-functionality", "#game-completeness"]) {
     const values = selector === "#inventory-game-condition" ? CONDITIONS : selector === "#game-functionality" ? FUNCTIONALITIES : COMPLETENESS;
     $(selector).replaceChildren(...values.map((value) => new Option(value, value)));

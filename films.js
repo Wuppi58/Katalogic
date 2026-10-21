@@ -640,6 +640,7 @@
   $("#film-photos-input").addEventListener("change", async (event) => {
     const files = [...event.target.files];
     event.target.value = "";
+    window.updateLocalizedFileInput?.(event.target);
     const remaining = 8 - photosDraft.length;
     if (remaining <= 0) return report($("#film-form-message"), "Maximal acht Bilder je Medium.");
     photoProcessing = true;

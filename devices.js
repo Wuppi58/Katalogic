@@ -887,6 +887,7 @@
   $("#device-photos-input").addEventListener("change", async (event) => {
     const files = [...event.target.files];
     event.target.value = "";
+    window.updateLocalizedFileInput?.(event.target);
     const remaining = PHOTO_LIMIT - currentPhotos.length;
     if (files.length > remaining) report($("#device-form-message"), `Es sind maximal ${PHOTO_LIMIT} Fotos je Gerät möglich. Es werden nur ${remaining} weitere verarbeitet.`, false);
     try {

@@ -13,7 +13,7 @@
     <meta name="apple-mobile-web-app-title" content="Katalogic">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="styles.css?v=management-2">
+    <link rel="stylesheet" href="styles.css?v=management-4">
     <link rel="stylesheet" href="devices.css?v=devices-2">
     <link rel="stylesheet" href="games.css?v=games-4">
     <link rel="stylesheet" href="books.css?v=books-2">
@@ -25,12 +25,14 @@
     <script src="chart-export.js?v=chart-2" defer></script>
     <script src="app.js?v=management-9" defer></script>
     <script src="devices.js?v=devices-5" defer></script>
-    <script src="games.js?v=games-6" defer></script>
+    <script src="games.js?v=games-7" defer></script>
     <script src="books.js?v=books-6" defer></script>
     <script src="films.js?v=films-4" defer></script>
     <script src="filaments.js?v=filaments-2" defer></script>
     <script src="small-parts.js?v=small-parts-10" defer></script>
+    <script src="management-search-scanner.js?v=search-scanner-1" defer></script>
     <script src="product-recognition.js?v=recognition-8" defer></script>
+    <script src="localize-file-inputs.js?v=file-inputs-1" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -169,8 +171,16 @@
           </div>
         </div>
         <section class="devices-toolbar card" aria-label="Geräte suchen und filtern">
-          <label for="device-query">Geräte durchsuchen</label>
+          <div class="management-search-heading">
+            <label for="device-query">Geräte durchsuchen</label>
+            <button class="button button-secondary" type="button" data-search-scanner="device-query">▦ Barcode scannen</button>
+          </div>
           <input id="device-query" type="search" autocomplete="off" placeholder="Name, Inventarnummer, Seriennummer, Modell, Standort …">
+          <div class="scanner-panel hidden" data-search-scanner-panel="device-query">
+            <video playsinline muted></video>
+            <p class="form-message" role="status" aria-live="polite"></p>
+            <button class="button button-secondary" type="button" data-search-scanner-stop>Kamera schließen</button>
+          </div>
           <div class="devices-filter-grid">
             <label>Kategorie<select id="device-filter-category"></select></label>
             <label>Gerätetyp<select id="device-filter-type"></select></label>
@@ -312,15 +322,15 @@
         </div>
         <div id="game-category-tabs" class="game-category-tabs" role="tablist" aria-label="Spielkategorien"></div>
         <section class="games-toolbar card" aria-label="Spiele suchen und filtern">
-          <div class="game-scan-row">
+          <div class="management-search-heading game-scan-row">
             <label for="game-query">Spiele durchsuchen</label>
-            <button id="game-start-scanner" class="button button-secondary" type="button">▦ Barcode scannen</button>
+            <button class="button button-secondary" type="button" data-search-scanner="game-query">▦ Barcode scannen</button>
           </div>
           <input id="game-query" type="search" autocomplete="off" placeholder="Name, Plattform, Genre, Verlag, EAN / ISBN …">
-          <div id="game-scanner-panel" class="scanner-panel hidden">
-            <video id="game-scanner-video" playsinline muted></video>
-            <p id="game-scanner-message" class="form-message" role="status" aria-live="polite"></p>
-            <button id="game-stop-scanner" class="button button-secondary" type="button">Kamera schließen</button>
+          <div class="scanner-panel hidden" data-search-scanner-panel="game-query">
+            <video playsinline muted></video>
+            <p class="form-message" role="status" aria-live="polite"></p>
+            <button class="button button-secondary" type="button" data-search-scanner-stop>Kamera schließen</button>
           </div>
           <div class="games-filter-grid">
             <label>Spielart<select id="game-filter-type"></select></label>
@@ -442,8 +452,16 @@
         </div>
         <div id="book-category-tabs" class="book-category-tabs" role="tablist" aria-label="Buchkategorien"></div>
         <section class="books-toolbar card" aria-label="Bücher suchen und filtern">
-          <label for="book-query">Bücher durchsuchen</label>
+          <div class="management-search-heading">
+            <label for="book-query">Bücher durchsuchen</label>
+            <button class="button button-secondary" type="button" data-search-scanner="book-query">▦ Barcode scannen</button>
+          </div>
           <input id="book-query" type="search" autocomplete="off" placeholder="Titel, Autor, ISBN, Verlag, Reihe, Standort …">
+          <div class="scanner-panel hidden" data-search-scanner-panel="book-query">
+            <video playsinline muted></video>
+            <p class="form-message" role="status" aria-live="polite"></p>
+            <button class="button button-secondary" type="button" data-search-scanner-stop>Kamera schließen</button>
+          </div>
           <div class="books-filter-grid">
             <label>Kategorie<select id="book-filter-category"></select></label>
             <label>Genre<input id="book-filter-genre" type="search" placeholder="Genre …"></label>
@@ -611,8 +629,16 @@
         </div>
         <div id="film-category-tabs" class="film-category-tabs" role="tablist" aria-label="Medienkategorien"></div>
         <section class="films-toolbar card" aria-label="Medien suchen und filtern">
-          <label for="film-query">Filme und Serien durchsuchen</label>
+          <div class="management-search-heading">
+            <label for="film-query">Filme und Serien durchsuchen</label>
+            <button class="button button-secondary" type="button" data-search-scanner="film-query">▦ Barcode scannen</button>
+          </div>
           <input id="film-query" type="search" autocomplete="off" placeholder="Titel, Darsteller, Regisseur, Franchise, EAN …">
+          <div class="scanner-panel hidden" data-search-scanner-panel="film-query">
+            <video playsinline muted></video>
+            <p class="form-message" role="status" aria-live="polite"></p>
+            <button class="button button-secondary" type="button" data-search-scanner-stop>Kamera schließen</button>
+          </div>
           <div class="films-filter-grid">
             <label>Format<select id="film-filter-format"></select></label>
             <label>Zustand<select id="film-filter-condition"></select></label>
@@ -814,8 +840,16 @@
           <div id="filament-material-summary" class="filament-summary-grid"></div>
         </section>
         <section class="filament-toolbar card" aria-label="Filamentrollen suchen und filtern">
-          <label for="filament-query">Suche</label>
+          <div class="management-search-heading">
+            <label for="filament-query">Suche</label>
+            <button class="button button-secondary" type="button" data-search-scanner="filament-query">▦ Barcode scannen</button>
+          </div>
           <input id="filament-query" type="search" maxlength="160" autocomplete="off" placeholder="Hersteller, Produkt, Material, Farbe, Lotnummer, Lagerort …">
+          <div class="scanner-panel hidden" data-search-scanner-panel="filament-query">
+            <video playsinline muted></video>
+            <p class="form-message" role="status" aria-live="polite"></p>
+            <button class="button button-secondary" type="button" data-search-scanner-stop>Kamera schließen</button>
+          </div>
           <div class="filament-filter-grid">
             <label>Materialtyp<select id="filament-filter-type"><option value="">Alle Materialtypen</option></select></label>
             <label>Farbe<input id="filament-filter-color" type="search" maxlength="100" placeholder="Alle Farben"></label>
@@ -1008,12 +1042,18 @@
         </section>
         <section class="small-parts-toolbar" aria-label="Bestand filtern">
           <label>Suche<input id="small-parts-search" type="search" placeholder="Name, Artikelnummer, Barcode, Lagerort …"></label>
+          <button class="button button-secondary" type="button" data-search-scanner="small-parts-search">▦ Barcode in Bestand suchen</button>
           <label>Kategorie<select id="small-parts-filter-category"><option value="">Alle Kategorien</option></select></label>
           <label>Lagerort<select id="small-parts-filter-location"><option value="">Alle Lagerorte</option></select></label>
           <label>Status<select id="small-parts-filter-status"><option value="">Alle Status</option><option value="low">Nachbestellen</option><option value="ok">Ausreichend</option><option value="unknown">Mindestbestand offen</option><option value="archived">Archiviert</option></select></label>
           <label>Sortieren<select id="small-parts-sort"><option value="name">Name</option><option value="quantity">Bestand (aufsteigend)</option><option value="category">Kategorie</option><option value="updated">Zuletzt geändert</option></select></label>
           <label>Code scannen / Tastaturscanner<input id="small-parts-scan-input" autocomplete="off" placeholder="Kennung eingeben und Enter drücken"></label>
           <button id="small-parts-camera-start" class="button button-secondary" type="button">Kamera starten</button>
+        </section>
+        <section class="scanner-panel hidden" data-search-scanner-panel="small-parts-search">
+          <video playsinline muted></video>
+          <p class="form-message" role="status" aria-live="polite"></p>
+          <button class="button button-secondary" type="button" data-search-scanner-stop>Kamera schließen</button>
         </section>
         <section id="small-parts-camera-panel" class="small-parts-camera-panel hidden" aria-label="Barcodekamera"><video id="small-parts-camera-video" playsinline muted></video><button id="small-parts-camera-stop" class="button button-secondary" type="button">Kamera stoppen</button><p id="small-parts-camera-message" class="form-message" role="status"></p></section>
         <div id="small-parts-list" class="small-parts-list" aria-live="polite"></div>
