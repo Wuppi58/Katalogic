@@ -440,7 +440,8 @@
       description: "game-description", condition: "inventory-game-condition", functionality: "game-functionality",
       completeness: "game-completeness", purchaseDate: "inventory-game-purchase-date", purchasePrice: "inventory-game-purchase-price",
       estimatedValue: "game-estimated-value", source: "game-source", location: "game-location",
-      mediaCondition: "game-media-condition", packaging: "game-packaging", manual: "inventory-game-manual"
+      mediaCondition: "game-media-condition", packaging: "game-packaging", manual: "inventory-game-manual",
+      loanBorrower: "game-loan-borrower", loanDate: "game-loan-date"
     };
     for (const [key, selector] of Object.entries(fieldMap)) {
       const value = data[key];
@@ -453,6 +454,8 @@
     if (mode === "duplicate") {
       $("#game-barcode").value = "";
       $("#game-sku").value = "";
+      $("#game-loan-borrower").value = "";
+      $("#game-loan-date").value = "";
     }
     photosDraft = Array.isArray(data.photos) ? [...data.photos] : [];
     renderPhotoGallery();
@@ -503,6 +506,8 @@
       mediaCondition: value("#game-media-condition"),
       packaging: value("#game-packaging"),
       manual: value("#inventory-game-manual"),
+      loanBorrower: value("#game-loan-borrower"),
+      loanDate: value("#game-loan-date"),
       specifics: readSpecifics(),
       customFields: readCustomFields(),
       photos: [...photosDraft],
@@ -654,7 +659,8 @@
       game.category, game.type, game.platform, game.releaseYear, game.publisher || game.developer,
       game.condition, game.functionality, game.completeness,
       `${game.quantity || 1} ${game.quantity === 1 ? "Exemplar" : "Exemplare"}`,
-      game.location, game.purchasePrice == null ? "" : `Kauf ${formatMoney(game.purchasePrice)}`,
+      game.location, game.loanBorrower ? `Verliehen an ${game.loanBorrower}${game.loanDate ? ` (${game.loanDate})` : ""}` : "",
+      game.purchasePrice == null ? "" : `Kauf ${formatMoney(game.purchasePrice)}`,
       game.estimatedValue == null ? "" : `Wert ${formatMoney(game.estimatedValue)}`
     ].filter(Boolean).join(" · ");
   }
@@ -753,7 +759,7 @@
       (entry.gameIds || []).length > 1 ? `Geteilt mit ${entry.gameIds.length - 1} weiteren Spiel(en)` : ""
     ].filter(Boolean).join(" · ")]);
     const detail = $("#game-detail");
-    detail.innerHTML = `<div class="game-detail-heading"><div><p class="eyebrow">SPIELDETAILS</p><h3 id="game-detail-heading">${escapeHtml(game.name)}</h3><p class="muted">${escapeHtml([game.category, game.type, game.platform].filter(Boolean).join(" · "))}</p></div><div class="game-detail-actions"><button class="button button-secondary" type="button" data-game-detail-action="edit" data-id="${escapeHtml(game.id)}">Bearbeiten</button><button class="button button-secondary" type="button" data-game-detail-action="duplicate" data-id="${escapeHtml(game.id)}">Duplizieren</button><button class="button button-secondary" type="button" data-game-detail-action="delete" data-id="${escapeHtml(game.id)}">Löschen</button><button class="icon-button" type="button" data-game-detail-action="close" aria-label="Details schließen">×</button></div></div>${photos ? `<div class="game-detail-gallery">${photos}</div>` : ""}<div class="game-detail-grid">${detailSection("Stammdaten", [["Untertitel / Edition", game.subtitle], ["Kategorie", game.category], ["Spielart", game.type], ["Plattform / System", game.platform], ["Entwickler", game.developer], ["Publisher / Verlag", game.publisher], ["Genre", game.genre], ["Sprache", game.language], ["Region / Edition", game.region], ["Erscheinungsjahr", game.releaseYear || (/^\d{4}$/.test(String(game.releaseDate || "")) ? game.releaseDate : "")], ["Erscheinungsdatum", /^\d{4}$/.test(String(game.releaseDate || "")) ? "" : formatReleaseDate(game.releaseDate)], ["EAN / ISBN", game.barcode], ["Artikelnummer", game.sku], ["Exemplare", game.quantity]])}${detailSection("Sammlung & Zustand", [["Zustand", game.condition], ["Funktionsfähigkeit", game.functionality], ["Vollständigkeit", game.completeness], ["Datenträgerzustand", game.mediaCondition], ["Hülle / Verpackung", game.packaging], ["Anleitung", game.manual], ["Standort", game.location]])}${detailSection("Kauf & Wert", [["Kaufdatum", game.purchaseDate], ["Kaufpreis", game.purchasePrice == null ? "" : formatMoney(game.purchasePrice)], ["Geschätzter Wert", game.estimatedValue == null ? "" : formatMoney(game.estimatedValue)], ["Kaufort / Händler", game.source]])}${detailSection("Spielartspezifische Daten", specifics)}${detailSection("Eigene Datenfelder", customFields)}${detailSection("Beschreibung & Notizen", [["Beschreibung", game.description]])}${detailSection("Zubehör & Erweiterungen", accessories)}</div>`;
+    detail.innerHTML = `<div class="game-detail-heading"><div><p class="eyebrow">SPIELDETAILS</p><h3 id="game-detail-heading">${escapeHtml(game.name)}</h3><p class="muted">${escapeHtml([game.category, game.type, game.platform].filter(Boolean).join(" · "))}</p></div><div class="game-detail-actions"><button class="button button-secondary" type="button" data-game-detail-action="edit" data-id="${escapeHtml(game.id)}">Bearbeiten</button><button class="button button-secondary" type="button" data-game-detail-action="duplicate" data-id="${escapeHtml(game.id)}">Duplizieren</button><button class="button button-secondary" type="button" data-game-detail-action="delete" data-id="${escapeHtml(game.id)}">Löschen</button><button class="icon-button" type="button" data-game-detail-action="close" aria-label="Details schließen">×</button></div></div>${photos ? `<div class="game-detail-gallery">${photos}</div>` : ""}<div class="game-detail-grid">${detailSection("Stammdaten", [["Untertitel / Edition", game.subtitle], ["Kategorie", game.category], ["Spielart", game.type], ["Plattform / System", game.platform], ["Entwickler", game.developer], ["Publisher / Verlag", game.publisher], ["Genre", game.genre], ["Sprache", game.language], ["Region / Edition", game.region], ["Erscheinungsjahr", game.releaseYear || (/^\d{4}$/.test(String(game.releaseDate || "")) ? game.releaseDate : "")], ["Erscheinungsdatum", /^\d{4}$/.test(String(game.releaseDate || "")) ? "" : formatReleaseDate(game.releaseDate)], ["EAN / ISBN", game.barcode], ["Artikelnummer", game.sku], ["Exemplare", game.quantity]])}${detailSection("Sammlung & Zustand", [["Zustand", game.condition], ["Funktionsfähigkeit", game.functionality], ["Vollständigkeit", game.completeness], ["Datenträgerzustand", game.mediaCondition], ["Hülle / Verpackung", game.packaging], ["Anleitung", game.manual], ["Standort", game.location], ["Verliehen an", game.loanBorrower], ["Verliehen am", game.loanDate]])}${detailSection("Kauf & Wert", [["Kaufdatum", game.purchaseDate], ["Kaufpreis", game.purchasePrice == null ? "" : formatMoney(game.purchasePrice)], ["Geschätzter Wert", game.estimatedValue == null ? "" : formatMoney(game.estimatedValue)], ["Kaufort / Händler", game.source]])}${detailSection("Spielartspezifische Daten", specifics)}${detailSection("Eigene Datenfelder", customFields)}${detailSection("Beschreibung & Notizen", [["Beschreibung", game.description]])}${detailSection("Zubehör & Erweiterungen", accessories)}</div>`;
     detail.classList.remove("hidden");
     detail.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -903,6 +909,13 @@
     photosDraft.splice(Number(button.dataset.removePhoto), 1);
     renderPhotoGallery();
   });
+  $("#game-form").addEventListener("click", (event) => {
+    if (!event.target.closest("[data-loan-return='game']")) return;
+    $("#game-loan-borrower").value = "";
+    $("#game-loan-date").value = "";
+    report($("#game-form-message"), "Spiel zurück erhalten – Ausleihdaten gelöscht. Zum Übernehmen bitte speichern.", false);
+  });
+
   $("#game-cards").addEventListener("click", (event) => {
     const button = event.target.closest("[data-game-action]");
     if (!button) return;

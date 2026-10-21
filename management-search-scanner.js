@@ -94,6 +94,11 @@
     });
   });
 
+  // Beim Fokussieren wird der alte Text markiert, damit ein neuer Scan (USB-/Bluetooth-Scanner) ihn ersetzt.
+  document.querySelectorAll("#library-search-query, #small-parts-search, input[id$='-query']").forEach((input) => {
+    input.addEventListener("focus", () => setTimeout(() => input.select(), 0));
+  });
+
   window.addEventListener("pagehide", () => {
     if (currentScanner) void stopScanner(currentScanner);
   });

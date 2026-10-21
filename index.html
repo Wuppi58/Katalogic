@@ -16,21 +16,21 @@
     <link rel="stylesheet" href="styles.css?v=management-4">
     <link rel="stylesheet" href="devices.css?v=devices-3">
     <link rel="stylesheet" href="games.css?v=games-4">
-    <link rel="stylesheet" href="books.css?v=books-3">
+    <link rel="stylesheet" href="books.css?v=books-4">
     <link rel="stylesheet" href="films.css?v=films-2">
-    <link rel="stylesheet" href="filaments.css?v=filaments-2">
+    <link rel="stylesheet" href="filaments.css?v=filaments-5">
     <link rel="stylesheet" href="small-parts.css?v=small-parts-2">
     <link rel="stylesheet" href="product-recognition.css?v=recognition-5">
     <script src="pdf-export.js?v=pdf-2" defer></script>
     <script src="chart-export.js?v=chart-2" defer></script>
     <script src="app.js?v=management-9" defer></script>
     <script src="devices.js?v=devices-6" defer></script>
-    <script src="games.js?v=games-8" defer></script>
-    <script src="books.js?v=books-8" defer></script>
-    <script src="films.js?v=films-4" defer></script>
-    <script src="filaments.js?v=filaments-2" defer></script>
+    <script src="games.js?v=games-9" defer></script>
+    <script src="books.js?v=books-9" defer></script>
+    <script src="films.js?v=films-5" defer></script>
+    <script src="filaments.js?v=filaments-5" defer></script>
     <script src="small-parts.js?v=small-parts-10" defer></script>
-    <script src="management-search-scanner.js?v=search-scanner-1" defer></script>
+    <script src="management-search-scanner.js?v=search-scanner-2" defer></script>
     <script src="product-recognition.js?v=recognition-8" defer></script>
     <script src="localize-file-inputs.js?v=file-inputs-1" defer></script>
   </head>
@@ -402,6 +402,11 @@
                 <label>Hülle / Verpackung<select id="game-packaging"><option value="">Nicht angegeben</option><option>Vorhanden</option><option>Fehlt</option></select></label>
                 <label>Anleitung<select id="inventory-game-manual"><option value="">Nicht angegeben</option><option>Vorhanden</option><option>Fehlt</option></select></label>
               </div>
+              <div class="game-form-grid loan-fields">
+                <label>Verliehen an<input id="game-loan-borrower" maxlength="160"></label>
+                <label>Verliehen am<input id="game-loan-date" type="date"></label>
+                <button type="button" class="button button-secondary loan-return-button" data-loan-return="game">Zurück erhalten</button>
+              </div>
             </fieldset>
             <fieldset class="game-section">
               <legend>Spielartspezifische Daten</legend>
@@ -585,11 +590,12 @@
                 <label>Kaufort / Händler<input id="book-source" maxlength="180"></label>
                 <label>Rezension<textarea id="book-review" rows="2" maxlength="2000"></textarea></label>
               </div>
-              <div id="book-loan-fields" class="book-form-grid hidden">
+              <div id="book-loan-fields" class="book-form-grid loan-fields">
                 <label>Verliehen an<input id="book-borrower" maxlength="160"></label>
                 <label>Verliehen am<input id="book-loan-date" type="date"></label>
                 <label>Rückgabe erwartet am<input id="book-due-date" type="date"></label>
                 <label>Tatsächlich zurückgegeben am<input id="book-return-date" type="date"></label>
+                <button type="button" class="button button-secondary loan-return-button" data-loan-return="book">Zurück erhalten</button>
               </div>
             </fieldset>
             <fieldset class="book-section">
@@ -770,6 +776,11 @@
                 <label>Geschätzter aktueller Wert (€)<input id="film-estimated-value" type="number" min="0" step="0.01"></label><label>Kaufort<input id="film-source" maxlength="180"></label>
                 <label>Lager- / Regalplatz<input id="film-location" maxlength="180"></label><label>Bewertung (1–5)<input id="film-rating-score" type="number" min="1" max="5" step="1"></label>
               </div>
+              <div class="film-form-grid loan-fields">
+                <label>Verliehen an<input id="film-loan-borrower" maxlength="160"></label>
+                <label>Verliehen am<input id="film-loan-date" type="date"></label>
+                <button type="button" class="button button-secondary loan-return-button" data-loan-return="film">Zurück erhalten</button>
+              </div>
               <label>Beschreibung<textarea id="film-description" rows="3" maxlength="3000"></textarea></label>
               <label>Eigene Auswahlwerte<input id="film-custom-values" maxlength="1000" placeholder="Eigene Merkmale, durch Semikolon getrennt"></label>
               <label class="film-photo-input">Cover, Poster und weitere Bilder<input id="film-photos-input" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
@@ -910,6 +921,17 @@
                 <label>Herstellungsdatum<input id="filament-manufactured-date" type="date"></label>
                 <label>Empfohlene Lagerfrist<input id="filament-shelf-life" maxlength="120" placeholder="Nur falls angegeben"></label>
               </div>
+              <div class="filament-color-picker" aria-label="Farbauswahl">
+                <div id="filament-color-palette" class="filament-color-palette" role="group" aria-label="Farbpalette"></div>
+                <div class="filament-color-custom">
+                  <label>Eigene Farbe<input id="filament-color-picker" type="color" value="#808080"></label>
+                  <label>Rot<input id="filament-color-r" type="range" min="0" max="255" value="128"><output id="filament-color-r-out">128</output></label>
+                  <label>Grün<input id="filament-color-g" type="range" min="0" max="255" value="128"><output id="filament-color-g-out">128</output></label>
+                  <label>Blau<input id="filament-color-b" type="range" min="0" max="255" value="128"><output id="filament-color-b-out">128</output></label>
+                  <span id="filament-color-preview" class="filament-color-swatch filament-color-preview" aria-hidden="true"></span>
+                  <button id="filament-color-clear" class="button button-quiet" type="button">Farbe entfernen</button>
+                </div>
+              </div>
               <div class="filament-section">
                 <h4>Optionale technische Angaben</h4>
                 <p class="muted">Unbekannte Werte bleiben leer. Trage nur Angaben vom Hersteller oder eigene Messwerte ein.</p>
@@ -945,6 +967,7 @@
                 <label>Ursprüngliches Nettogewicht (g)<input id="filament-original-weight" type="number" min="0" max="100000" step="1"></label>
                 <label>Aktuelle Restmenge (g)<input id="filament-remaining-weight" type="number" min="0" max="100000" step="1"></label>
                 <label>Status<select id="filament-state"><option value="unknown">Unbekannt</option><option value="full">Voll</option><option value="open">Angebrochen</option><option value="empty">Leer</option><option value="archived">Archiviert</option></select></label>
+                <label>Anzahl ungeöffnete Rollen<input id="filament-quantity" type="number" min="1" max="1000" step="1" value="1" title="Gleiche, ungeöffnete Rollen in einem Eintrag. Angebrochene Rollen bitte einzeln anlegen. Kaufpreis und Restmenge gelten je Rolle."></label>
                 <label>Gewogenes Gesamtgewicht (g)<input id="filament-weighed-total" type="number" min="0" max="200000" step="1"></label>
                 <div class="filament-weight-calculate"><button id="filament-calculate-weight" class="button button-secondary" type="button">Restmenge berechnen</button><small>Gesamtgewicht minus Leergewicht der Spule</small></div>
                 <label>Warnschwelle (g)<input id="filament-low-threshold" type="number" min="0" max="100000" step="1" value="100"></label>
@@ -956,7 +979,8 @@
                 <label>Behälter / Trockenbox<input id="filament-container" maxlength="160"></label>
                 <label>Lagerungsstatus<input id="filament-storage-status" maxlength="120" placeholder="z. B. Trockenbox, Regal"></label>
                 <label>Feuchtigkeitsstatus<select id="filament-humidity"><option>Unbekannt</option><option>Trocken</option><option>Möglicherweise feucht</option><option>Muss getrocknet werden</option></select></label>
-                <label>Manuell gemessene Luftfeuchtigkeit (%)<input id="filament-humidity-percent" type="number" min="0" max="100" step="0.1"></label>
+                <label>Empfohlene Luftfeuchtigkeit (%)<input id="filament-recommended-humidity" type="number" min="0" max="100" step="0.1" placeholder="z. B. 20"></label>
+                <label>Aktuelle Luftfeuchtigkeit (%)<input id="filament-humidity-percent" type="number" min="0" max="100" step="0.1"></label>
                 <label>Letzte Trocknung<input id="filament-last-dried" type="date"></label>
                 <label>Trocknungstemperatur (°C)<input id="filament-drying-temp" type="number" min="0" max="300" step="1"></label>
                 <label>Trocknungsdauer (Stunden)<input id="filament-drying-duration" type="number" min="0" max="1000" step="0.5"></label>

@@ -170,7 +170,7 @@
   }
 
   function updateLoanVisibility() {
-    $("#book-loan-fields").classList.toggle("hidden", $("#book-reading-status").value !== "Verliehen");
+    $("#book-loan-fields").classList.remove("hidden");
   }
 
   function validIsbn(value, length) {
@@ -780,6 +780,12 @@
     photosDraft.splice(Number(button.dataset.removePhoto), 1);
     renderPhotoGallery();
   });
+  $("#book-loan-fields").addEventListener("click", (event) => {
+    if (!event.target.closest("[data-loan-return]")) return;
+    for (const id of ["borrower", "loan-date", "due-date", "return-date"]) $(`#book-${id}`).value = "";
+    report($("#book-form-message"), "Buch zurück erhalten – Ausleihdaten gelöscht. Zum Übernehmen bitte speichern.", false);
+  });
+
   $("#book-cards").addEventListener("click", (event) => {
     const button = event.target.closest("[data-book-action]");
     if (!button) return;

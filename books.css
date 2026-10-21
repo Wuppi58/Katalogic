@@ -166,3 +166,5 @@ body:has(#books-view:not(.hidden)) .layout { width: min(100% - 40px, 1120px); }
   .books-toolbar-footer .button-row { justify-content: flex-start; }
   .book-detail-heading { flex-direction: column; }
 }
+
+.loan-return-button { align-self: end; justify-self: start; }

@@ -197,9 +197,11 @@
       seasonMedia: "film-season-media", boxName: "film-box-name", purchaseDate: "film-purchase-date",
       purchasePrice: "film-purchase-price", estimatedValue: "film-estimated-value", source: "film-source",
       location: "film-location", ratingScore: "film-rating-score", description: "film-description",
-      synopsis: "film-synopsis", notes: "film-notes", quantity: "film-quantity"
+      synopsis: "film-synopsis", notes: "film-notes", quantity: "film-quantity",
+      loanBorrower: "film-loan-borrower", loanDate: "film-loan-date"
     };
     for (const [key, selector] of Object.entries(fields)) {
+      if (mode === "duplicate" && key.startsWith("loan")) continue;
       if (data[key] !== undefined && data[key] !== null) $( `#${selector}`).value = String(data[key]);
     }
     $("#film-category").value = data.category && [...$("#film-category").options].some((option) => option.value === data.category)
@@ -263,6 +265,7 @@
       purchasePrice: number("#film-purchase-price"), estimatedValue: number("#film-estimated-value"),
       source: value("#film-source"), location: value("#film-location"), ratingScore: number("#film-rating-score"),
       description: value("#film-description"), synopsis: value("#film-synopsis"), notes: value("#film-notes"),
+      loanBorrower: value("#film-loan-borrower"), loanDate: value("#film-loan-date"),
       customValues: splitList(value("#film-custom-values")), details: readDetails(),
       relatedIds: [...$("#film-related").selectedOptions].map((option) => option.value),
       photos: [...photosDraft], updatedAt: now()
@@ -413,6 +416,7 @@
       entry.condition, entry.functionality, entry.completeness,
       `${entry.quantity || 1} ${entry.quantity === 1 ? "Exemplar" : "Exemplare"}`,
       entry.franchise, entry.part ? `Teil ${entry.part}` : "", entry.seriesName,
+      entry.loanBorrower ? `Verliehen an ${entry.loanBorrower}${entry.loanDate ? ` (${entry.loanDate})` : ""}` : "",
       entry.seasonNumber ? `Staffel ${entry.seasonNumber}` : "",
       entry.estimatedValue == null ? "" : `Wert ${money(entry.estimatedValue)}`
     ].filter(Boolean).join(" · ");
@@ -515,7 +519,7 @@
     ])}${detailSection("Sammlung & verwandte Medien", box)}${detailSection("Kauf & Wert", [
       ["Kaufdatum", entry.purchaseDate], ["Kaufpreis", entry.purchasePrice == null ? "" : money(entry.purchasePrice)],
       ["Geschätzter Wert", entry.estimatedValue == null ? "" : money(entry.estimatedValue)],
-      ["Kaufort", entry.source], ["Lager- / Regalplatz", entry.location], ["Bewertung", entry.ratingScore ? `${entry.ratingScore} / 5` : ""]
+      ["Kaufort", entry.source], ["Lager- / Regalplatz", entry.location], ["Verliehen an", entry.loanBorrower], ["Verliehen am", entry.loanDate], ["Bewertung", entry.ratingScore ? `${entry.ratingScore} / 5` : ""]
     ])}${detailSection("Beschreibung & Notizen", [
       ["Inhaltsangabe", entry.synopsis], ["Beschreibung", entry.description], ["Persönliche Notizen", entry.notes],
       ["Eigene Merkmale", entry.customValues?.join(", ")]
@@ -661,6 +665,13 @@
     photosDraft.splice(Number(button.dataset.removePhoto), 1);
     renderPhotos();
   });
+  $("#film-form").addEventListener("click", (event) => {
+    if (!event.target.closest("[data-loan-return='film']")) return;
+    $("#film-loan-borrower").value = "";
+    $("#film-loan-date").value = "";
+    report($("#film-form-message"), "Zurück erhalten – Ausleihdaten gelöscht. Zum Übernehmen bitte speichern.", false);
+  });
+
   $("#film-cards").addEventListener("click", (event) => {
     const button = event.target.closest("[data-film-action]");
     if (!button) return;

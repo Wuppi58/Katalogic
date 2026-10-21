@@ -364,7 +364,7 @@ function isValidFilamentInventory(inventory) {
     ["lotNumber", "purchaseDate", "dealer", "location", "container", "storageStatus",
       "lastDriedDate", "humidityStatus", "notes", "state", "createdAt", "updatedAt", "printerLink", "profileLink"]
       .every((key) => spool[key] === undefined || isString(spool[key])) &&
-    ["originalNetWeightG", "remainingG", "weighedTotalG", "humidityPercent", "lowStockThresholdG",
+    ["originalNetWeightG", "remainingG", "weighedTotalG", "humidityPercent", "recommendedHumidityPercent", "lowStockThresholdG", "quantity",
       "dryingTemperatureC", "dryingDurationHours"].every((key) => spool[key] === undefined || spool[key] === null ||
         (typeof spool[key] === "number" && Number.isFinite(spool[key]) && spool[key] >= 0)) &&
     (spool.consumptions === undefined || (Array.isArray(spool.consumptions) &&

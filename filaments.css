@@ -198,3 +198,18 @@ body:has(#filaments-view:not(.hidden)) .layout { width: min(100% - 40px, 1160px)
   .filament-toolbar-footer .button-row { justify-content: flex-start; }
   .filament-detail-heading { flex-direction: column; }
 }
+
+.filament-spool-rows { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.filament-spool-rows li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line, rgba(128, 128, 128, .25)); font-size: 11px; }
+.filament-low-text { color: #825b12; font-weight: 700; }
+
+.filament-color-picker { display: grid; gap: 10px; margin: 8px 0; }
+.filament-color-palette { display: flex; flex-wrap: wrap; gap: 8px; }
+.filament-palette-swatch { width: 30px; height: 30px; flex-basis: 30px; padding: 0; cursor: pointer; }
+.filament-palette-swatch[aria-pressed="true"] { outline: 3px solid var(--green, #2e7d32); outline-offset: 2px; }
+.filament-color-custom { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.filament-color-custom label { display: grid; gap: 4px; font-size: 11px; }
+.filament-color-custom input[type="color"] { width: 44px; height: 34px; padding: 2px; }
+.filament-color-custom input[type="range"] { width: 120px; }
+.filament-color-custom output { font-size: 10px; text-align: right; }
+.filament-color-preview { width: 34px; height: 34px; flex-basis: 34px; }

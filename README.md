@@ -110,6 +110,10 @@ der Bestandssuche samt ISBN gefunden und können von dort direkt geöffnet
 werden. Der Lesestatus lässt sich per **Gelesen**/**Ungelesen** direkt auf der
 Buchkarte und in der Detailansicht umschalten und wird sofort gespeichert.
 Geräte, Spiele, Bücher und Filme erfassen zusätzlich ein Erscheinungsjahr.
+Bücher, Filme und Spiele lassen sich mit **Verliehen an** und **Verliehen am**
+erfassen; **Zurück erhalten** löscht die Ausleihdaten wieder. In den
+Suchfeldern wird der alte Text beim Fokussieren markiert, sodass ein neuer
+Scanner-Barcode ihn direkt ersetzt.
 Der Bereich **Filme** verwaltet physische und digitale Ausgaben als getrennte
 Datensätze. Er bietet Kategorien, kombinierbare Filter, Sortierung sowie
 Kachel- und Listenansicht. Für DVD, Blu-ray, 3D-Blu-ray, 4K, digitale Filme,
@@ -132,6 +136,12 @@ benutzerdefinierte Slot-Anzahlen) können beschriftet, Druckern zugeordnet und
 mit Bestandsrollen belegt werden. Slot-Verbrauch wird nach Bestätigung von der
 Rollenrestmenge abgezogen und in der Verbrauchshistorie gespeichert; eine
 direkte Verbindung zur Druckerhardware besteht nicht.
+Gleiche Produkte werden auf einer Karte zusammengefasst (z. B. „5 Rollen: 3 voll,
+2 angebrochen · 4 kg übrig"). Ungeöffnete Rollen lassen sich als Anzahl erfassen,
+angebrochene einzeln mit Restmenge; beim Buchen von Verbrauch wird eine Rolle
+automatisch vom Stapel gelöst. Empfohlene und aktuelle Luftfeuchtigkeit sowie
+eine Farbpalette mit RGB-Reglern, die den Farbcode automatisch füllen, sind
+verfügbar.
 Filamentdaten bleiben lokal gespeichert, sind in JSON-Sicherungen enthalten
 und können über die Bestandssuche direkt geöffnet werden.
 Geräte, Spiele, Bücher, Filme und Filamente behalten ihre jeweils eigenen

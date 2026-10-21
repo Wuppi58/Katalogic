@@ -53,9 +53,11 @@
     weighedTotalG: "filament-weighed-total",
     lowStockThresholdG: "filament-low-threshold",
     purchasePrice: "filament-purchase-price",
+    quantity: "filament-quantity",
     dryingTemperatureC: "filament-drying-temp",
     dryingDurationHours: "filament-drying-duration",
-    humidityPercent: "filament-humidity-percent"
+    humidityPercent: "filament-humidity-percent",
+    recommendedHumidityPercent: "filament-recommended-humidity"
   };
   const emptyInventory = () => ({ products: [], spools: [], profiles: [], amsUnits: [], customOptions: {}, view: "grid" });
   let inventory;
@@ -194,8 +196,71 @@
       .map((entry) => `${entry.key} | ${entry.value} | ${entry.unit || ""}`.trim())
       .join("\n");
     syncDiameterFields(product?.diameter || "1.75");
+    syncColorControls();
     updateMaterialHints();
     renderPhotos();
+  }
+
+  const COLOR_PALETTE = [
+    ["Weiß", "#FFFFFF"], ["Schwarz", "#1A1A1A"], ["Grau", "#808080"], ["Silber", "#C0C0C0"],
+    ["Rot", "#D32F2F"], ["Orange", "#F57C00"], ["Gelb", "#FBC02D"], ["Hellgrün", "#8BC34A"],
+    ["Grün", "#2E7D32"], ["Türkis", "#00ACC1"], ["Hellblau", "#4FC3F7"], ["Blau", "#1565C0"],
+    ["Lila", "#7B1FA2"], ["Pink", "#EC407A"], ["Braun", "#6D4C41"], ["Beige", "#D7C4A3"],
+    ["Gold", "#D4AF37"], ["Transparent", "#E8F1F2"]
+  ];
+
+  function normalizeHex(value) {
+    const hex = String(value || "").trim();
+    if (/^#[0-9a-f]{6}$/i.test(hex)) return hex.toUpperCase();
+    if (/^#[0-9a-f]{3}$/i.test(hex)) return `#${[...hex.slice(1)].map((digit) => digit + digit).join("")}`.toUpperCase();
+    return "";
+  }
+
+  function syncColorControls(source = "") {
+    const hex = normalizeHex($("#filament-color-hex").value);
+    const [red, green, blue] = hex ? [1, 3, 5].map((index) => parseInt(hex.slice(index, index + 2), 16)) : [128, 128, 128];
+    if (source !== "picker") $("#filament-color-picker").value = (hex || "#808080").toLowerCase();
+    for (const [id, value] of [["r", red], ["g", green], ["b", blue]]) {
+      if (source !== "slider") $(`#filament-color-${id}`).value = value;
+      $(`#filament-color-${id}-out`).textContent = value;
+    }
+    $("#filament-color-preview").style.backgroundColor = hex || "transparent";
+    for (const button of $$("#filament-color-palette button")) button.setAttribute("aria-pressed", String(button.dataset.hex === hex));
+  }
+
+  function setColorHex(hex, source = "") {
+    $("#filament-color-hex").value = hex;
+    syncColorControls(source);
+  }
+
+  function setupColorPicker() {
+    const palette = $("#filament-color-palette");
+    for (const [name, hex] of COLOR_PALETTE) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "filament-color-swatch filament-palette-swatch";
+      button.style.backgroundColor = hex;
+      button.dataset.hex = hex;
+      button.dataset.name = name;
+      button.title = `${name} (${hex})`;
+      button.setAttribute("aria-label", `${name} ${hex}`);
+      palette.append(button);
+    }
+    palette.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-hex]");
+      if (!button) return;
+      setColorHex(button.dataset.hex);
+      if (!$("#filament-color").value.trim()) $("#filament-color").value = button.dataset.name;
+    });
+    $("#filament-color-picker").addEventListener("input", (event) => setColorHex(event.target.value.toUpperCase(), "picker"));
+    for (const id of ["r", "g", "b"]) {
+      $(`#filament-color-${id}`).addEventListener("input", () => {
+        const hex = `#${["r", "g", "b"].map((key) => Number($(`#filament-color-${key}`).value).toString(16).padStart(2, "0")).join("")}`.toUpperCase();
+        setColorHex(hex, "slider");
+      });
+    }
+    $("#filament-color-hex").addEventListener("input", () => syncColorControls());
+    $("#filament-color-clear").addEventListener("click", () => setColorHex(""));
   }
 
   function syncDiameterFields(diameter) {
@@ -287,7 +352,7 @@
       $(`#${id}`).value = spool?.[key] ?? (key === "humidityStatus" ? "Unbekannt" : key === "state" ? "unknown" : "");
     }
     for (const [key, id] of Object.entries(NUMBER_SPOOL_FIELDS)) {
-      $(`#${id}`).value = spool?.[key] ?? (key === "lowStockThresholdG" ? "100" : "");
+      $(`#${id}`).value = spool?.[key] ?? (key === "lowStockThresholdG" ? "100" : key === "quantity" ? "1" : "");
     }
     spoolPhotoDraft = spool?.spoolPhoto || "";
     renderPhotos();
@@ -298,6 +363,7 @@
     $("#filament-form").reset();
     $("#filament-spool-id").value = "";
     $("#filament-low-threshold").value = "100";
+    $("#filament-quantity").value = "1";
     $("#filament-state").value = "unknown";
     $("#filament-humidity").value = "Unbekannt";
     $("#filament-form-message").textContent = "";
@@ -399,6 +465,19 @@
       createdAt: oldSpool?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+    spool.quantity = Math.max(1, Math.floor(Number(spool.quantity)) || 1);
+    if (spool.quantity > 1) {
+      if (spool.state !== "full" && spool.state !== "unknown") {
+        $("#filament-form-message").textContent = "Mehrere Rollen in einem Eintrag gibt es nur für ungeöffnete Rollen (Status „Voll“). Angebrochene Rollen bitte einzeln anlegen.";
+        return;
+      }
+      spool.state = "full";
+      if ((spool.consumptions || []).length) {
+        $("#filament-form-message").textContent = "Diese Rolle hat schon Verbrauchsbuchungen. Bitte nur eine Rolle pro Eintrag verwenden.";
+        return;
+      }
+    }
+    if (spool.state === "full" && spool.remainingG == null) spool.remainingG = spool.originalNetWeightG;
     const previousProductId = oldSpool?.productId;
     const productIndex = next.products.findIndex((item) => item.id === product.id);
     if (productIndex >= 0) next.products[productIndex] = product;
@@ -464,6 +543,24 @@
     const price = unitPrice(spool, product);
     if (price == null || spool.remainingG == null) return null;
     return price * spool.remainingG / 1000;
+  }
+
+  function spoolQty(spool) {
+    return spool.state === "full" ? Math.max(1, Math.floor(Number(spool.quantity)) || 1) : 1;
+  }
+
+  function spoolGrams(spool) {
+    if (spool.state === "empty" || spool.state === "archived") return 0;
+    if (spool.state === "full") {
+      const perRoll = spool.remainingG ?? spool.originalNetWeightG ?? productFor(spool)?.netWeightG ?? 0;
+      return perRoll * spoolQty(spool);
+    }
+    return spool.remainingG || 0;
+  }
+
+  function formatGrams(grams) {
+    const number = (value, digits) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: digits }).format(value);
+    return grams >= 1000 ? `${number(grams / 1000, 2)} kg` : `${number(grams, 0)} g`;
   }
 
   function isLow(spool) {
@@ -534,20 +631,21 @@
 
   function renderOverview() {
     const live = inventory.spools.filter((spool) => spool.state !== "archived" && spool.state !== "empty");
-    const grams = live.reduce((sum, spool) => sum + (spool.remainingG || 0), 0);
-    const value = live.reduce((sum, spool) => sum + (estimatedRemainingValue(spool, productFor(spool)) || 0), 0);
+    const grams = live.reduce((sum, spool) => sum + spoolGrams(spool), 0);
+    const value = live.reduce((sum, spool) => sum + (estimatedRemainingValue(spool, productFor(spool)) || 0) * spoolQty(spool), 0);
     const lows = live.filter(isLow).length;
+    const rolls = live.reduce((sum, spool) => sum + spoolQty(spool), 0);
     $("#filament-total-weight").textContent = `${new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(grams)} g`;
     $("#filament-total-value").textContent = money(value);
-    $("#filament-count").textContent = `${live.length} / ${lows}`;
+    $("#filament-count").textContent = `${rolls} / ${lows}`;
     const groups = new Map();
     for (const spool of live) {
       const product = productFor(spool);
       if (!product) continue;
       const key = `${product.materialType || "Material unbekannt"}\u0000${product.color || "Farbe unbekannt"}`;
       const group = groups.get(key) || { material: product.materialType || "Material unbekannt", color: product.color || "Farbe unbekannt", grams: 0, spools: 0 };
-      group.grams += spool.remainingG || 0;
-      group.spools++;
+      group.grams += spoolGrams(spool);
+      group.spools += spoolQty(spool);
       groups.set(key, group);
     }
     const container = $("#filament-material-summary");
@@ -562,7 +660,7 @@
       const label = document.createElement("span");
       label.textContent = `${group.material} · ${group.color}`;
       const amount = document.createElement("strong");
-      amount.textContent = `${group.grams} g · ${group.spools} ${group.spools === 1 ? "Rolle" : "Rollen"}`;
+      amount.textContent = `${formatGrams(group.grams)} · ${group.spools} ${group.spools === 1 ? "Rolle" : "Rollen"}`;
       item.append(swatch, label, amount);
       container.append(item);
     }
@@ -591,13 +689,13 @@
     }
   }
 
-  function cardFor(spool) {
-    const product = productFor(spool);
+  function cardFor(product, spools) {
     const card = document.createElement("article");
     card.className = "filament-card";
-    if (spool.spoolPhoto || product.photo) {
+    const photo = product.photo || spools.find((spool) => spool.spoolPhoto)?.spoolPhoto;
+    if (photo) {
       const image = document.createElement("img");
-      image.src = spool.spoolPhoto || product.photo;
+      image.src = photo;
       image.alt = `Foto der Filamentrolle ${product.name}`;
       image.loading = "lazy";
       card.append(image);
@@ -617,7 +715,15 @@
     subtitle.textContent = [product.manufacturer, product.materialType, product.variant, product.color].filter(Boolean).join(" · ");
     titleBlock.append(title, subtitle);
     header.append(swatch, titleBlock);
-    const percent = remainingPercent(spool);
+    const live = spools.filter((spool) => spool.state !== "empty" && spool.state !== "archived");
+    const sealed = live.filter((spool) => spool.state === "full").reduce((sum, spool) => sum + spoolQty(spool), 0);
+    const opened = live.filter((spool) => spool.state === "open").length;
+    const unknown = live.filter((spool) => spool.state !== "full" && spool.state !== "open").length;
+    const emptyCount = spools.filter((spool) => spool.state === "empty").length;
+    const totalRolls = sealed + opened + unknown;
+    const grams = spools.reduce((sum, spool) => sum + spoolGrams(spool), 0);
+    const capacity = live.reduce((sum, spool) => sum + (spool.originalNetWeightG || product.netWeightG || 0) * spoolQty(spool), 0);
+    const percent = capacity > 0 ? Math.max(0, Math.min(100, grams / capacity * 100)) : null;
     const meter = document.createElement("div");
     meter.className = "filament-meter";
     meter.setAttribute("role", "meter");
@@ -630,34 +736,51 @@
     meter.append(fill);
     const quantity = document.createElement("strong");
     quantity.className = "filament-remaining";
-    quantity.textContent = `${spool.remainingG == null ? "Unbekannt" : `${spool.remainingG} g`}${percent == null ? "" : ` · ${Math.round(percent)} %`}`;
+    const counts = [
+      sealed ? `${sealed} voll` : "", opened ? `${opened} angebrochen` : "",
+      unknown ? `${unknown} Status unbekannt` : "", emptyCount ? `${emptyCount} leer` : ""
+    ].filter(Boolean).join(", ");
+    quantity.textContent = `${totalRolls} ${totalRolls === 1 ? "Rolle" : "Rollen"}${counts ? `: ${counts}` : ""} · ${formatGrams(grams)} übrig`;
     const details = document.createElement("p");
     details.className = "filament-card-meta";
     details.textContent = [
       product.diameter ? `${product.diameter} mm` : "",
-      spool.location ? `Ort: ${spool.location}` : "",
-      spool.lotNumber ? `Lot: ${spool.lotNumber}` : "",
-      spool.humidityStatus && spool.humidityStatus !== "Unbekannt" ? spool.humidityStatus : "Feuchtigkeit unbekannt",
-      ({ unknown: "Bestand unbekannt", full: "Voll", open: "Angebrochen", empty: "Leer", archived: "Archiviert" })[spool.state] || "Status unbekannt"
+      ...new Set(spools.map((spool) => spool.location).filter(Boolean).map((location) => `Ort: ${location}`))
     ].filter(Boolean).join(" · ");
-    const actions = document.createElement("div");
-    actions.className = "filament-card-actions";
-    for (const [action, label] of [["view", "Details"], ["edit", "Bearbeiten"], ["duplicate", "Duplizieren"], ["delete", "Löschen"]]) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = action === "delete" ? "button button-quiet" : "button button-secondary";
-      button.textContent = label;
-      button.dataset.filamentAction = action;
-      button.dataset.id = spool.id;
-      actions.append(button);
+    const list = document.createElement("ul");
+    list.className = "filament-spool-rows";
+    const stateLabels = { unknown: "Status unbekannt", full: "Voll", open: "Angebrochen", empty: "Leer", archived: "Archiviert" };
+    for (const spool of spools) {
+      const row = document.createElement("li");
+      const label = document.createElement("span");
+      const rowPercent = remainingPercent(spool);
+      label.textContent = spool.state === "full" && spoolQty(spool) > 1
+        ? `${spoolQty(spool)} × Voll`
+        : [stateLabels[spool.state] || "Status unbekannt",
+          spool.state === "open" || spool.state === "unknown" ? (spool.remainingG == null ? "Rest unbekannt" : `${spool.remainingG} g${rowPercent == null ? "" : ` (${Math.round(rowPercent)} %)`}`) : "",
+          spool.lotNumber ? `Lot ${spool.lotNumber}` : ""].filter(Boolean).join(" · ");
+      if (isLow(spool)) label.classList.add("filament-low-text");
+      const actions = document.createElement("div");
+      actions.className = "filament-card-actions";
+      for (const [action, text] of [["view", "Details"], ["edit", "Bearbeiten"], ["duplicate", "Duplizieren"], ["delete", "Löschen"]]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = action === "delete" ? "button button-quiet" : "button button-secondary";
+        button.textContent = text;
+        button.dataset.filamentAction = action;
+        button.dataset.id = spool.id;
+        actions.append(button);
+      }
+      row.append(label, actions);
+      list.append(row);
     }
-    if (isLow(spool)) {
+    if (spools.some(isLow)) {
       const low = document.createElement("span");
       low.className = "filament-low-badge";
       low.textContent = "Niedriger Bestand";
       content.append(header, low);
     } else content.append(header);
-    content.append(meter, quantity, details, actions);
+    content.append(meter, quantity, details, list);
     card.append(content);
     return card;
   }
@@ -665,11 +788,17 @@
   function renderSpools() {
     const target = $("#filament-cards");
     const spools = getFilteredSpools();
+    const groups = new Map();
+    for (const spool of spools) {
+      if (!groups.has(spool.productId)) groups.set(spool.productId, []);
+      groups.get(spool.productId).push(spool);
+    }
     target.replaceChildren();
     target.classList.toggle("is-list", inventory.view === "list");
     $("#filament-view-grid").setAttribute("aria-pressed", String(inventory.view === "grid"));
     $("#filament-view-list").setAttribute("aria-pressed", String(inventory.view === "list"));
-    $("#filament-result-count").textContent = `${spools.length} von ${inventory.spools.length} Rollen`;
+    const rolls = spools.reduce((sum, spool) => sum + spoolQty(spool), 0);
+    $("#filament-result-count").textContent = `${groups.size} ${groups.size === 1 ? "Produkt" : "Produkte"} · ${rolls} ${rolls === 1 ? "Rolle" : "Rollen"}`;
     if (!spools.length) {
       const empty = document.createElement("div");
       empty.className = "filament-empty card";
@@ -677,7 +806,10 @@
       target.append(empty);
       return;
     }
-    for (const spool of spools) target.append(cardFor(spool));
+    for (const [productId, group] of groups) {
+      const product = inventory.products.find((item) => item.id === productId);
+      if (product) target.append(cardFor(product, group));
+    }
   }
 
   function escapeHtml(value) {
@@ -745,7 +877,8 @@
     ])}${section("Rolle & Bestand", [
       ["Kennung", spool.id], ["Chargen- / Lotnummer", spool.lotNumber],
       ["Ursprüngliches Nettogewicht", spool.originalNetWeightG == null ? "" : `${spool.originalNetWeightG} g`],
-      ["Aktuelle Restmenge", spool.remainingG == null ? "" : `${spool.remainingG} g`],
+      ["Anzahl ungeöffnete Rollen", spoolQty(spool) > 1 ? spoolQty(spool) : ""],
+      ["Aktuelle Restmenge", spool.remainingG == null ? "" : `${spool.remainingG} g${spoolQty(spool) > 1 ? " je Rolle" : ""}`],
       ["Restanteil", remainingPercent(spool) == null ? "" : `${Math.round(remainingPercent(spool))} %`],
       ["Gewogenes Gesamtgewicht", spool.weighedTotalG == null ? "" : `${spool.weighedTotalG} g`],
       ["Status", spoolStateLabel(spool.state)], ["Warnschwelle", spool.lowStockThresholdG == null ? "" : `${spool.lowStockThresholdG} g`],
@@ -754,7 +887,8 @@
       ["Restwert-Schätzung", estimatedRemainingValue(spool, product) == null ? "" : money(estimatedRemainingValue(spool, product))],
       ["Händler", spool.dealer], ["Lagerort", spool.location], ["Behälter", spool.container],
       ["Lagerungsstatus", spool.storageStatus], ["Feuchtigkeitsstatus", spool.humidityStatus || "Unbekannt"],
-      ["Manuell gemessene Luftfeuchtigkeit", spool.humidityPercent == null ? "" : `${spool.humidityPercent} %`],
+      ["Empfohlene Luftfeuchtigkeit", spool.recommendedHumidityPercent == null ? "" : `${spool.recommendedHumidityPercent} %`],
+      ["Aktuelle Luftfeuchtigkeit", spool.humidityPercent == null ? "" : `${spool.humidityPercent} %`],
       ["Letzte Trocknung", spool.lastDriedDate],
       ["Trocknung", spool.dryingTemperatureC == null ? "" : `${spool.dryingTemperatureC} °C`],
       ["Trocknungsdauer", spool.dryingDurationHours == null ? "" : `${spool.dryingDurationHours} Stunden`],
@@ -911,10 +1045,23 @@
     renderProfiles();
   }
 
+  function splitOneRoll(next, target) {
+    if (target.state !== "full" || spoolQty(target) <= 1) return target;
+    const single = { ...structuredClone(target), id: makeId(), quantity: 1, consumptions: [] };
+    target.quantity = spoolQty(target) - 1;
+    next.spools.push(single);
+    next.amsUnits = next.amsUnits.map((unit) => ({
+      ...unit,
+      slots: unit.slots.map((assignedId) => assignedId === target.id ? single.id : assignedId)
+    }));
+    return single;
+  }
+
   function changeState(spool, newState) {
     const next = structuredClone(inventory);
-    const target = next.spools.find((entry) => entry.id === spool.id);
+    let target = next.spools.find((entry) => entry.id === spool.id);
     if (!target) return;
+    if (newState !== "full") target = splitOneRoll(next, target);
     target.state = newState;
     if (newState === "empty") {
       target.remainingG = 0;
@@ -923,6 +1070,7 @@
     target.updatedAt = new Date().toISOString();
     try {
       saveInventory(next);
+      if (activeSpoolId) activeSpoolId = target.id;
       renderAll();
       if (activeSpoolId) renderDetail(activeSpoolId);
       status(newState === "empty" ? "Rolle als leer markiert." : newState === "archived" ? "Rolle archiviert." : "Rolle aktualisiert.", false);
@@ -971,7 +1119,7 @@
     const confirmation = `Verbrauch von ${grams} g${project ? ` für „${project}“` : ""} am ${date} von „${product?.name || "Filament"}“ buchen?`;
     if (!window.confirm(confirmation)) return;
     const next = structuredClone(inventory);
-    const target = next.spools.find((entry) => entry.id === spool.id);
+    const target = splitOneRoll(next, next.spools.find((entry) => entry.id === spool.id));
     target.remainingG = target.remainingG == null ? null : Math.max(0, target.remainingG - grams);
     target.state = target.remainingG === 0 ? "empty" : "open";
     target.consumptions = [...(target.consumptions || []), { id: makeId(), date, grams, project }];
@@ -1240,6 +1388,7 @@
     if ($("#filament-diameter").value !== "custom") $("#filament-custom-diameter").value = "";
   });
   $("#filament-calculate-weight").addEventListener("click", calculateRemainingFromWeight);
+  setupColorPicker();
   for (const selector of ["#filament-net-weight", "#filament-purchase-price"]) {
     $(selector).addEventListener("input", updateUnitPrice);
   }
