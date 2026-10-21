@@ -14,9 +14,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="styles.css?v=management-4">
-    <link rel="stylesheet" href="devices.css?v=devices-2">
+    <link rel="stylesheet" href="devices.css?v=devices-3">
     <link rel="stylesheet" href="games.css?v=games-4">
-    <link rel="stylesheet" href="books.css?v=books-2">
+    <link rel="stylesheet" href="books.css?v=books-3">
     <link rel="stylesheet" href="films.css?v=films-2">
     <link rel="stylesheet" href="filaments.css?v=filaments-2">
     <link rel="stylesheet" href="small-parts.css?v=small-parts-2">
@@ -24,9 +24,9 @@
     <script src="pdf-export.js?v=pdf-2" defer></script>
     <script src="chart-export.js?v=chart-2" defer></script>
     <script src="app.js?v=management-9" defer></script>
-    <script src="devices.js?v=devices-5" defer></script>
-    <script src="games.js?v=games-7" defer></script>
-    <script src="books.js?v=books-6" defer></script>
+    <script src="devices.js?v=devices-6" defer></script>
+    <script src="games.js?v=games-8" defer></script>
+    <script src="books.js?v=books-8" defer></script>
     <script src="films.js?v=films-4" defer></script>
     <script src="filaments.js?v=filaments-2" defer></script>
     <script src="small-parts.js?v=small-parts-10" defer></script>
@@ -215,7 +215,7 @@
             <div><p class="eyebrow">GERÄTEDATEN</p><h3 id="device-editor-heading">Gerät hinzufügen</h3></div>
             <button id="device-editor-close" class="icon-button" type="button" aria-label="Formular schließen">×</button>
           </div>
-          <form id="device-form">
+          <form id="device-form" class="device-form">
             <input id="device-id" type="hidden">
             <div class="device-form-grid">
               <label class="device-name-field">Gerätename<input id="device-name" maxlength="120" required placeholder="z. B. Wohnzimmer-Konsole"></label>
@@ -227,6 +227,7 @@
               <label>Seriennummer<input id="device-serial" maxlength="120"></label>
               <label>Inventarnummer<input id="device-inventory" maxlength="80"></label>
               <label>Farbe<input id="device-color" maxlength="60"></label>
+              <label>Erscheinungsjahr<input id="device-release-year" type="number" min="1000" max="2200" step="1" placeholder="z. B. 2020"></label>
               <label>Anzahl<input id="device-quantity" type="number" min="1" step="1" value="1"></label>
               <label>Kaufdatum<input id="device-purchase-date" type="date"></label>
               <label>Kaufpreis (€)<input id="device-purchase-price" type="number" min="0" step="0.01"></label>
@@ -378,6 +379,7 @@
                 <label>Genre<input id="game-genre" list="game-genre-options" maxlength="100"><datalist id="game-genre-options"></datalist></label>
                 <label>Sprache<input id="game-language" list="game-language-options" maxlength="80"><datalist id="game-language-options"></datalist></label>
                 <label>Region / Edition<input id="inventory-game-region" maxlength="100"></label>
+                <label>Erscheinungsjahr<input id="game-release-year" type="number" min="1000" max="2200" step="1" placeholder="z. B. 2020"></label>
                 <label>Erscheinungsdatum<input id="game-release-date" type="date"></label>
                 <label>EAN / ISBN / Produktnummer<input id="game-barcode" maxlength="40" inputmode="numeric"></label>
                 <label>Artikelnummer<input id="game-sku" maxlength="80"></label>

@@ -114,6 +114,38 @@
     element.classList.toggle("error", isError);
   }
 
+  function normalizeReleaseDate(value) {
+    const input = value.trim();
+    if (!input) return "";
+    if (/^\d{4}$/.test(input)) {
+      const year = Number(input);
+      return year >= 1000 ? input : null;
+    }
+    const isoDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
+    const germanDate = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(input);
+    const [, yearText, monthText, dayText] = isoDate
+      ? [isoDate[0], isoDate[1], isoDate[2], isoDate[3]]
+      : germanDate
+        ? [germanDate[0], germanDate[3], germanDate[2], germanDate[1]]
+        : [];
+    if (!yearText) return null;
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const day = Number(dayText);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (year < 1000 || date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+      return null;
+    }
+    return `${yearText}-${monthText}-${dayText}`;
+  }
+
+  function formatReleaseDate(value) {
+    const normalized = normalizeReleaseDate(String(value || ""));
+    if (!normalized || /^\d{4}$/.test(normalized)) return String(value || "");
+    const [year, month, day] = normalized.split("-");
+    return `${day}.${month}.${year}`;
+  }
+
   function uniqueSorted(values) {
     return [...new Set(values.filter((value) => typeof value === "string" && value.trim()).map((value) => value.trim()))]
       .sort((a, b) => a.localeCompare(b, "de"));
@@ -391,6 +423,7 @@
     $("#game-editor-heading").textContent = mode === "edit" ? "Spiel bearbeiten" : mode === "duplicate" ? "Spiel duplizieren" : "Spiel hinzufügen";
     clearForm();
     const data = game || {};
+    const legacyYear = /^\d{4}$/.test(String(data.releaseDate || "")) ? data.releaseDate : "";
     $("#game-id").value = mode === "edit" && game ? game.id : mode === "duplicate" ? makeId() : $("#game-id").value;
     updateCategorySelect(data.category || "");
     const categoryOptions = uniqueSorted([...DEFAULT_CATEGORIES, ...customValues("categories")]);
@@ -411,8 +444,12 @@
     };
     for (const [key, selector] of Object.entries(fieldMap)) {
       const value = data[key];
-      if (value !== undefined && value !== null) $( `#${selector}`).value = String(value);
+      if (value !== undefined && value !== null) {
+        if (key === "releaseDate" && /^\d{4}$/.test(String(value))) continue;
+        $(`#${selector}`).value = String(value);
+      }
     }
+    $("#game-release-year").value = data.releaseYear || legacyYear;
     if (mode === "duplicate") {
       $("#game-barcode").value = "";
       $("#game-sku").value = "";
@@ -449,7 +486,8 @@
       genre: value("#game-genre"),
       language: value("#game-language"),
       region: value("#inventory-game-region"),
-      releaseDate: value("#game-release-date"),
+      releaseYear: value("#game-release-year"),
+      releaseDate: normalizeReleaseDate(value("#game-release-date")),
       barcode: value("#game-barcode"),
       sku: value("#game-sku"),
       quantity: Math.max(1, Number($("#game-quantity").value) || 1),
@@ -492,7 +530,13 @@
     event.preventDefault();
     if (photoProcessing) return report($("#game-form-message"), "Warte bitte, bis die Bildverarbeitung abgeschlossen ist.");
     if (!$("#game-form").reportValidity()) return;
+    const releaseDate = normalizeReleaseDate($("#game-release-date").value);
+    if (releaseDate === null) {
+      $("#game-release-date").focus();
+      return report($("#game-form-message"), "Bitte gib ein gültiges vollständiges Erscheinungsdatum ein.");
+    }
     const game = collectGame();
+    game.releaseDate = releaseDate;
     if (!game.name) return report($("#game-form-message"), "Bitte gib einen Spielnamen ein.");
     if (!game.category) return report($("#game-form-message"), "Bitte wähle oder ergänze eine Spielkategorie.");
     if (!game.type) return report($("#game-form-message"), "Bitte wähle oder ergänze eine Spielart.");
@@ -556,7 +600,7 @@
         const text = [
           game.name, game.subtitle, game.category, game.type, game.platform, game.developer,
           game.publisher, game.genre, game.language, game.region, game.barcode, game.sku,
-          game.description, game.location, game.source, game.condition, game.functionality,
+          game.releaseYear, game.description, game.location, game.source, game.condition, game.functionality,
           game.completeness, ...Object.values(game.specifics || {}),
           ...(game.customFields || []).flatMap((entry) => [entry.key, entry.value]), accessoryText
         ].filter(Boolean).join(" ").toLocaleLowerCase("de");
@@ -607,7 +651,7 @@
 
   function gameSummary(game) {
     return [
-      game.category, game.type, game.platform, game.publisher || game.developer,
+      game.category, game.type, game.platform, game.releaseYear, game.publisher || game.developer,
       game.condition, game.functionality, game.completeness,
       `${game.quantity || 1} ${game.quantity === 1 ? "Exemplar" : "Exemplare"}`,
       game.location, game.purchasePrice == null ? "" : `Kauf ${formatMoney(game.purchasePrice)}`,
@@ -709,7 +753,7 @@
       (entry.gameIds || []).length > 1 ? `Geteilt mit ${entry.gameIds.length - 1} weiteren Spiel(en)` : ""
     ].filter(Boolean).join(" · ")]);
     const detail = $("#game-detail");
-    detail.innerHTML = `<div class="game-detail-heading"><div><p class="eyebrow">SPIELDETAILS</p><h3 id="game-detail-heading">${escapeHtml(game.name)}</h3><p class="muted">${escapeHtml([game.category, game.type, game.platform].filter(Boolean).join(" · "))}</p></div><div class="game-detail-actions"><button class="button button-secondary" type="button" data-game-detail-action="edit" data-id="${escapeHtml(game.id)}">Bearbeiten</button><button class="button button-secondary" type="button" data-game-detail-action="duplicate" data-id="${escapeHtml(game.id)}">Duplizieren</button><button class="button button-secondary" type="button" data-game-detail-action="delete" data-id="${escapeHtml(game.id)}">Löschen</button><button class="icon-button" type="button" data-game-detail-action="close" aria-label="Details schließen">×</button></div></div>${photos ? `<div class="game-detail-gallery">${photos}</div>` : ""}<div class="game-detail-grid">${detailSection("Stammdaten", [["Untertitel / Edition", game.subtitle], ["Kategorie", game.category], ["Spielart", game.type], ["Plattform / System", game.platform], ["Entwickler", game.developer], ["Publisher / Verlag", game.publisher], ["Genre", game.genre], ["Sprache", game.language], ["Region / Edition", game.region], ["Erscheinungsdatum", game.releaseDate], ["EAN / ISBN", game.barcode], ["Artikelnummer", game.sku], ["Exemplare", game.quantity]])}${detailSection("Sammlung & Zustand", [["Zustand", game.condition], ["Funktionsfähigkeit", game.functionality], ["Vollständigkeit", game.completeness], ["Datenträgerzustand", game.mediaCondition], ["Hülle / Verpackung", game.packaging], ["Anleitung", game.manual], ["Standort", game.location]])}${detailSection("Kauf & Wert", [["Kaufdatum", game.purchaseDate], ["Kaufpreis", game.purchasePrice == null ? "" : formatMoney(game.purchasePrice)], ["Geschätzter Wert", game.estimatedValue == null ? "" : formatMoney(game.estimatedValue)], ["Kaufort / Händler", game.source]])}${detailSection("Spielartspezifische Daten", specifics)}${detailSection("Eigene Datenfelder", customFields)}${detailSection("Beschreibung & Notizen", [["Beschreibung", game.description]])}${detailSection("Zubehör & Erweiterungen", accessories)}</div>`;
+    detail.innerHTML = `<div class="game-detail-heading"><div><p class="eyebrow">SPIELDETAILS</p><h3 id="game-detail-heading">${escapeHtml(game.name)}</h3><p class="muted">${escapeHtml([game.category, game.type, game.platform].filter(Boolean).join(" · "))}</p></div><div class="game-detail-actions"><button class="button button-secondary" type="button" data-game-detail-action="edit" data-id="${escapeHtml(game.id)}">Bearbeiten</button><button class="button button-secondary" type="button" data-game-detail-action="duplicate" data-id="${escapeHtml(game.id)}">Duplizieren</button><button class="button button-secondary" type="button" data-game-detail-action="delete" data-id="${escapeHtml(game.id)}">Löschen</button><button class="icon-button" type="button" data-game-detail-action="close" aria-label="Details schließen">×</button></div></div>${photos ? `<div class="game-detail-gallery">${photos}</div>` : ""}<div class="game-detail-grid">${detailSection("Stammdaten", [["Untertitel / Edition", game.subtitle], ["Kategorie", game.category], ["Spielart", game.type], ["Plattform / System", game.platform], ["Entwickler", game.developer], ["Publisher / Verlag", game.publisher], ["Genre", game.genre], ["Sprache", game.language], ["Region / Edition", game.region], ["Erscheinungsjahr", game.releaseYear || (/^\d{4}$/.test(String(game.releaseDate || "")) ? game.releaseDate : "")], ["Erscheinungsdatum", /^\d{4}$/.test(String(game.releaseDate || "")) ? "" : formatReleaseDate(game.releaseDate)], ["EAN / ISBN", game.barcode], ["Artikelnummer", game.sku], ["Exemplare", game.quantity]])}${detailSection("Sammlung & Zustand", [["Zustand", game.condition], ["Funktionsfähigkeit", game.functionality], ["Vollständigkeit", game.completeness], ["Datenträgerzustand", game.mediaCondition], ["Hülle / Verpackung", game.packaging], ["Anleitung", game.manual], ["Standort", game.location]])}${detailSection("Kauf & Wert", [["Kaufdatum", game.purchaseDate], ["Kaufpreis", game.purchasePrice == null ? "" : formatMoney(game.purchasePrice)], ["Geschätzter Wert", game.estimatedValue == null ? "" : formatMoney(game.estimatedValue)], ["Kaufort / Händler", game.source]])}${detailSection("Spielartspezifische Daten", specifics)}${detailSection("Eigene Datenfelder", customFields)}${detailSection("Beschreibung & Notizen", [["Beschreibung", game.description]])}${detailSection("Zubehör & Erweiterungen", accessories)}</div>`;
     detail.classList.remove("hidden");
     detail.scrollIntoView({ behavior: "smooth", block: "start" });
   }

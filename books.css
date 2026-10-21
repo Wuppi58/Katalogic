@@ -128,6 +128,8 @@ body:has(#books-view:not(.hidden)) .layout { width: min(100% - 40px, 1120px); }
 .book-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 13px; }
 .book-detail-section { min-width: 0; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--card) 90%, var(--paper)); }
 .book-detail-section h4 { margin: 0 0 8px; color: var(--green); font-size: 12px; }
+.book-reading-status-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.book-reading-status-buttons .button { min-height: 36px; padding: 0 12px; }
 .book-detail-section dl { display: grid; gap: 6px; margin: 0; }
 .book-detail-row { display: grid; grid-template-columns: minmax(105px, .8fr) 1.2fr; gap: 8px; font-size: 10px; line-height: 1.45; }
 .book-detail-row dt { color: var(--muted); }

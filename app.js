@@ -238,7 +238,7 @@ function isValidGameInventory(inventory) {
   const validGame = (game) => validRow(game) && isString(game.name) &&
     (game.quantity === undefined || (Number.isInteger(game.quantity) && game.quantity > 0)) &&
     ["subtitle", "category", "type", "platform", "developer", "publisher", "genre", "language", "region",
-      "releaseDate", "barcode", "sku", "description", "condition", "functionality", "completeness",
+      "releaseYear", "releaseDate", "barcode", "sku", "description", "condition", "functionality", "completeness",
       "purchaseDate", "source", "location", "mediaCondition", "packaging", "manual", "updatedAt"]
       .every((key) => game[key] === undefined || isString(game[key])) &&
     ["purchasePrice", "estimatedValue"].every((key) => game[key] === undefined || game[key] === null ||

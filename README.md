@@ -107,7 +107,9 @@ acht verkleinerte Cover- oder Galeriebilder. Suche, kombinierbare Filter,
 Sortierung, Kachel- und Listenansicht, Duplizieren, Löschen sowie eigene
 Kategorien und Genres sind im Bücherbereich verfügbar. Die Bücher werden in
 der Bestandssuche samt ISBN gefunden und können von dort direkt geöffnet
-werden.
+werden. Der Lesestatus lässt sich per **Gelesen**/**Ungelesen** direkt auf der
+Buchkarte und in der Detailansicht umschalten und wird sofort gespeichert.
+Geräte, Spiele, Bücher und Filme erfassen zusätzlich ein Erscheinungsjahr.
 Der Bereich **Filme** verwaltet physische und digitale Ausgaben als getrennte
 Datensätze. Er bietet Kategorien, kombinierbare Filter, Sortierung sowie
 Kachel- und Listenansicht. Für DVD, Blu-ray, 3D-Blu-ray, 4K, digitale Filme,

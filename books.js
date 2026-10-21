@@ -547,13 +547,18 @@
       meta.textContent = summary(book);
       const actions = document.createElement("div");
       actions.className = "book-card-actions";
-      for (const [action, label] of [["view", "Details"], ["edit", "Bearbeiten"], ["duplicate", "Duplizieren"], ["delete", "×"]]) {
+      for (const [action, label] of [["view", "Details"], ["edit", "Bearbeiten"], ["duplicate", "Duplizieren"], ["read", "Gelesen"], ["unread", "Ungelesen"], ["delete", "×"]]) {
         const button = document.createElement("button");
         button.type = "button";
         button.className = action === "delete" ? "icon-button" : "button button-secondary";
         button.textContent = label;
         button.dataset.bookAction = action;
         button.dataset.id = book.id;
+        if (action === "read" || action === "unread") {
+          const active = (book.readingStatus || READING_STATUSES[0]) === (action === "read" ? "Gelesen" : "Ungelesen");
+          button.setAttribute("aria-pressed", String(active));
+          if (active) button.className = "button button-primary";
+        }
         if (action === "delete") button.setAttribute("aria-label", `${book.title} löschen`);
         actions.append(button);
       }
@@ -569,7 +574,12 @@
     return `<section class="book-detail-section"><h4>${escapeHtml(title)}</h4><dl>${rows.map(([label, value]) => `<div class="book-detail-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl></section>`;
   }
 
-  function renderDetail(bookId) {
+  function readingStatusControl(book) {
+    const status = book.readingStatus || READING_STATUSES[0];
+    return `<section class="book-detail-section book-reading-status-control" aria-label="Lesestatus ändern"><h4>Lesestatus schnell ändern</h4><div class="book-reading-status-buttons"><button class="button ${status === "Gelesen" ? "button-primary" : "button-secondary"}" type="button" data-book-reading-status="Gelesen" data-id="${escapeHtml(book.id)}" aria-pressed="${status === "Gelesen"}">Gelesen</button><button class="button ${status === "Ungelesen" ? "button-primary" : "button-secondary"}" type="button" data-book-reading-status="Ungelesen" data-id="${escapeHtml(book.id)}" aria-pressed="${status === "Ungelesen"}">Ungelesen</button></div></section>`;
+  }
+
+  function renderDetail(bookId, scroll = true) {
     const book = database.books.find((entry) => entry.id === bookId);
     if (!book) return;
     const photos = (book.photos || []).map((photo, index) => `<figure><img src="${escapeHtml(photo)}" alt="${escapeHtml(book.title)} – Bild ${index + 1}" loading="lazy"></figure>`).join("");
@@ -597,14 +607,32 @@
     ])}${detailSection("Sammlung & Lesestatus", [
       ["Zustand", book.condition], ["Lesestatus", book.readingStatus], ["Bewertung", book.rating ? `${book.rating} / 5` : ""],
       ["Exemplare", book.quantity], ["Standort", book.location]
-    ])}${detailSection("Kauf & Wert", [
+    ])}${readingStatusControl(book)}${detailSection("Kauf & Wert", [
       ["Kaufdatum", book.purchaseDate], ["Kaufpreis", book.purchasePrice == null ? "" : money(book.purchasePrice)],
       ["Geschätzter Wert", book.estimatedValue == null ? "" : money(book.estimatedValue)], ["Kaufort / Händler", book.source]
     ])}${detailSection("Formatdetails", details)}${detailSection("Ausleihe", loan)}${detailSection("Klappentext & persönliche Notizen", [
       ["Klappentext", book.blurb], ["Eigene Notizen", book.notes], ["Rezension", book.review]
     ])}</div>`;
     data.classList.remove("hidden");
-    data.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (scroll) data.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function updateReadingStatus(bookId, readingStatus) {
+    const next = structuredClone(database);
+    const book = next.books.find((entry) => entry.id === bookId);
+    if (!book) return;
+    if (book.readingStatus === readingStatus) return;
+    book.readingStatus = readingStatus;
+    book.updatedAt = now();
+    try {
+      saveDatabase(next);
+      renderAll();
+      if (!$("#book-detail").classList.contains("hidden")) renderDetail(bookId, false);
+      report($("#book-result-count"), `Lesestatus auf „${readingStatus}“ gesetzt.`, false);
+    } catch (error) {
+      console.error("Could not update book reading status.", error);
+      report($("#book-result-count"), "Lesestatus konnte nicht gespeichert werden.");
+    }
   }
 
   function deleteBook(book) {
@@ -757,12 +785,19 @@
     if (!button) return;
     const book = database.books.find((entry) => entry.id === button.dataset.id);
     if (!book) return;
+    if (button.dataset.bookAction === "read") updateReadingStatus(book.id, "Gelesen");
+    if (button.dataset.bookAction === "unread") updateReadingStatus(book.id, "Ungelesen");
     if (button.dataset.bookAction === "view") renderDetail(book.id);
     if (button.dataset.bookAction === "edit") showEditor("edit", book);
     if (button.dataset.bookAction === "duplicate") showEditor("duplicate", book);
     if (button.dataset.bookAction === "delete") deleteBook(book);
   });
   $("#book-detail").addEventListener("click", (event) => {
+    const statusButton = event.target.closest("[data-book-reading-status]");
+    if (statusButton) {
+      updateReadingStatus(statusButton.dataset.id, statusButton.dataset.bookReadingStatus);
+      return;
+    }
     const button = event.target.closest("[data-book-detail-action]");
     if (!button) return;
     if (button.dataset.bookDetailAction === "close") {
