@@ -114,6 +114,24 @@
     element.classList.toggle("error", isError);
   }
 
+  function updateDuplicateWarning() {
+    const name = $("#game-name").value.trim();
+    const normalizedName = name.toLocaleLowerCase("de");
+    const matches = normalizedName
+      ? database.games.filter((game) =>
+        game.id !== $("#game-id").value &&
+        String(game.name || "").trim().toLocaleLowerCase("de") === normalizedName)
+      : [];
+    const warning = $("#game-duplicate-warning");
+    warning.classList.toggle("hidden", matches.length === 0);
+    if (!matches.length) {
+      report(warning, "", false);
+      return;
+    }
+    const existing = uniqueSorted(matches.map((game) => [game.name, game.platform].filter(Boolean).join(" · ")));
+    report(warning, `Hinweis: „${name}“ ist bereits vorhanden${existing.length ? ` (${existing.join(", ")})` : ""}. Du kannst trotzdem speichern, wenn es ein weiterer Eintrag sein soll.`);
+  }
+
   function normalizeReleaseDate(value) {
     const input = value.trim();
     if (!input) return "";
@@ -414,6 +432,7 @@
     $("#game-completeness").value = COMPLETENESS[3];
     renderPhotoGallery();
     report($("#game-form-message"), "", false);
+    updateDuplicateWarning();
   }
 
   function showEditor(mode, game) {
@@ -451,6 +470,7 @@
       }
     }
     $("#game-release-year").value = data.releaseYear || legacyYear;
+    updateDuplicateWarning();
     if (mode === "duplicate") {
       $("#game-barcode").value = "";
       $("#game-sku").value = "";
@@ -548,6 +568,7 @@
     if ([game.purchasePrice, game.estimatedValue].some((amount) => amount !== null && (!Number.isFinite(amount) || amount < 0))) {
       return report($("#game-form-message"), "Preis und Wert müssen gültige positive Beträge sein.");
     }
+    updateDuplicateWarning();
     const next = structuredClone(database);
     const index = next.games.findIndex((entry) => entry.id === game.id);
     const wasEditing = index >= 0;
@@ -848,6 +869,7 @@
   $("#game-editor-close").addEventListener("click", () => $("#game-editor").classList.add("hidden"));
   $("#game-editor-cancel").addEventListener("click", () => $("#game-editor").classList.add("hidden"));
   $("#game-form").addEventListener("submit", submitGame);
+  $("#game-name").addEventListener("input", updateDuplicateWarning);
   $("#game-category").addEventListener("change", () => {
     const input = $("[data-game-custom='category']");
     input.classList.toggle("hidden", $("#game-category").value !== "__custom__");

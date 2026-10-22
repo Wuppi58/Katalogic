@@ -99,7 +99,11 @@ Download Code zur Auswahl.
 Zubehör und Erweiterungen können mit Menge, Zustand und Funktionsfähigkeit
 erfasst und mehreren Spielen zugeordnet werden. Der Spielebestand ist in
 JSON-Sicherungen enthalten. Die Barcode-Kamerasuche in „In meiner Sammlung
-suchen“ durchsucht auch Spiele.
+suchen“ durchsucht auch Spiele. Beim Eingeben eines Spielnamens weist ein
+Hinweis auf bereits vorhandene Einträge mit demselben Namen hin
+(Groß- und Kleinschreibung werden ignoriert). Der Hinweis blockiert das
+Speichern nicht, sodass separate Exemplare oder Editionen weiterhin getrennt
+erfasst werden können.
 Für jeden Eintrag kann außerdem ein optionaler, frei eingebbarer Lagerort
 gespeichert werden; er bleibt beim Bearbeiten, Suchen und Synchronisieren
 erhalten.
