@@ -8,7 +8,7 @@
   const SCRIPT_PATHS = [
     "pdf-export.js?v=pdf-2",
     "chart-export.js?v=chart-2",
-    "app.js?v=management-10",
+    "app.js?v=management-11",
     "devices.js?v=devices-7",
     "games.js?v=games-10",
     "books.js?v=books-10",
@@ -87,6 +87,13 @@
 
   async function initialize() {
     if (!("indexedDB" in window)) throw new Error("Dieser Browser unterstützt IndexedDB nicht.");
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+      try {
+        await navigator.serviceWorker.register("./service-worker.js");
+      } catch (error) {
+        console.error("Could not register service worker.", error);
+      }
+    }
     database = await openDatabase();
     let value = await readState();
     if (value === undefined) {
