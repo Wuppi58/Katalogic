@@ -4,6 +4,11 @@ Katalogic ist eine installierbare PWA zum Katalogisieren verschiedenster Dinge.
 Einträge werden lokal auf dem Gerät gespeichert und funktionieren dadurch auch
 offline. Optional lassen sie sich über Supabase zwischen Geräten synchronisieren
 oder als JSON-Datei exportieren und importieren.
+Die lokale Sammlung wird in IndexedDB gespeichert, das für größere Bestände und
+Fotos ausgelegt ist. Vorhandene Daten aus dem früheren Browser-Speicher werden
+beim ersten Start automatisch übernommen. Der nutzbare Platz hängt vom Browser
+und vom verfügbaren Gerätespeicher ab; regelmäßige JSON-Sicherungen bleiben
+empfohlen.
 
 ## Windows-Desktop-App
 

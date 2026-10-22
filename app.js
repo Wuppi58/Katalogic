@@ -1,6 +1,5 @@
 "use strict";
 
-const STORAGE_KEY = "katalogic-state-v1";
 const THEME_STORAGE_KEY = "katalogic-theme";
 const SYNC_INTERVAL = 60_000;
 const ACCESSORY_TYPES = {
@@ -14,6 +13,10 @@ const DEFAULT_CATEGORIES = [
 let legacyVaultKey = "";
 let needsStateMigration = false;
 const state = loadState();
+let persistedState = {
+  ...structuredClone(state),
+  ...(legacyVaultKey ? { legacyMigrationKey: legacyVaultKey } : {})
+};
 let syncInProgress = false;
 let scannerStream = null;
 let activeView = "home";
@@ -153,7 +156,7 @@ function applyTheme(theme, persistChoice = false) {
 
 function loadState() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    const saved = window.KatalogicLocalStorage.load() || {};
     legacyVaultKey = typeof saved.legacyMigrationKey === "string"
       ? saved.legacyMigrationKey
       : (typeof saved.vaultKey === "string" ? saved.vaultKey : "");
@@ -484,16 +487,40 @@ function formatGameDetails(details = {}) {
     .join(" · ");
 }
 
-function persist() {
+async function persist() {
   try {
     const saved = { ...state };
     if (legacyVaultKey) saved.legacyMigrationKey = legacyVaultKey;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    await window.KatalogicLocalStorage.save(saved);
+    persistedState = structuredClone(saved);
   } catch (error) {
     console.error("Could not save local Katalogic data.", error);
-    showMessage(elements.syncMessage, "Speichern auf diesem Gerät fehlgeschlagen. Prüfe den verfügbaren Speicherplatz.");
+    const restoredState = structuredClone(persistedState);
+    delete restoredState.legacyMigrationKey;
+    for (const key of Object.keys(state)) delete state[key];
+    Object.assign(state, restoredState);
+    legacyVaultKey = typeof persistedState.legacyMigrationKey === "string" ? persistedState.legacyMigrationKey : "";
+    for (const category of ["device", "game", "book", "film", "filament", "small-parts"]) {
+      window.dispatchEvent(new Event(`katalogic:${category}-inventory-imported`));
+    }
+    const reason = error.name === "QuotaExceededError"
+      ? "Das Speicherlimit des Browsers ist erreicht. Exportiere eine Sicherung und entferne nicht benötigte Bilder."
+      : `Lokales Speichern fehlgeschlagen: ${error.message}`;
+    showMessage(elements.syncMessage, reason);
+    notify(reason);
     throw error;
   }
+}
+
+function saveInventoryState(key, inventory, validator) {
+  if (!validator(inventory)) throw new Error("Ungültige Bestandsdaten.");
+  const previous = state[key];
+  state[key] = inventory;
+  return persist().then(() => true).catch(() => {
+    state[key] = previous;
+    notify("Speichern fehlgeschlagen. Die vorherigen Daten wurden wiederhergestellt.");
+    return false;
+  });
 }
 
 window.KatalogicDeviceStorage = {
@@ -503,15 +530,7 @@ window.KatalogicDeviceStorage = {
     });
   },
   save(inventory) {
-    if (!isValidDeviceInventory(inventory)) throw new Error("Ungültiger Gerätebestand.");
-    const previous = state.deviceInventory;
-    state.deviceInventory = inventory;
-    try {
-      persist();
-    } catch (error) {
-      state.deviceInventory = previous;
-      throw error;
-    }
+    return saveInventoryState("deviceInventory", inventory, isValidDeviceInventory);
   }
 };
 
@@ -520,15 +539,7 @@ window.KatalogicGameStorage = {
     return structuredClone(state.gameInventory || { games: [], accessories: [], customOptions: {} });
   },
   save(inventory) {
-    if (!isValidGameInventory(inventory)) throw new Error("Ungültiger Spielebestand.");
-    const previous = state.gameInventory;
-    state.gameInventory = inventory;
-    try {
-      persist();
-    } catch (error) {
-      state.gameInventory = previous;
-      throw error;
-    }
+    return saveInventoryState("gameInventory", inventory, isValidGameInventory);
   }
 };
 
@@ -537,15 +548,7 @@ window.KatalogicBookStorage = {
     return structuredClone(state.bookInventory || { books: [], series: [], customOptions: {}, view: "grid" });
   },
   save(inventory) {
-    if (!isValidBookInventory(inventory)) throw new Error("Ungültiger Bücherbestand.");
-    const previous = state.bookInventory;
-    state.bookInventory = inventory;
-    try {
-      persist();
-    } catch (error) {
-      state.bookInventory = previous;
-      throw error;
-    }
+    return saveInventoryState("bookInventory", inventory, isValidBookInventory);
   }
 };
 
@@ -554,15 +557,7 @@ window.KatalogicFilmStorage = {
     return structuredClone(state.filmInventory || { entries: [], franchises: [], customOptions: {}, view: "grid" });
   },
   save(inventory) {
-    if (!isValidFilmInventory(inventory)) throw new Error("Ungültiger Filmbestand.");
-    const previous = state.filmInventory;
-    state.filmInventory = inventory;
-    try {
-      persist();
-    } catch (error) {
-      state.filmInventory = previous;
-      throw error;
-    }
+    return saveInventoryState("filmInventory", inventory, isValidFilmInventory);
   }
 };
 
@@ -571,15 +566,7 @@ window.KatalogicSmallPartsStorage = {
     return structuredClone(state.smallPartsInventory || { items: [], locations: [] });
   },
   save(inventory) {
-    if (!isValidSmallPartsInventory(inventory)) throw new Error("Ungültiger Kleinteilebestand.");
-    const previous = state.smallPartsInventory;
-    state.smallPartsInventory = inventory;
-    try {
-      persist();
-    } catch (error) {
-      state.smallPartsInventory = previous;
-      throw error;
-    }
+    return saveInventoryState("smallPartsInventory", inventory, isValidSmallPartsInventory);
   }
 };
 
@@ -588,15 +575,7 @@ window.KatalogicFilamentStorage = {
     return structuredClone(state.filamentInventory || { products: [], spools: [], profiles: [], customOptions: {}, view: "grid" });
   },
   save(inventory) {
-    if (!isValidFilamentInventory(inventory)) throw new Error("Ungültiger Filamentbestand.");
-    const previous = state.filamentInventory;
-    state.filamentInventory = inventory;
-    try {
-      persist();
-    } catch (error) {
-      state.filamentInventory = previous;
-      throw error;
-    }
+    return saveInventoryState("filamentInventory", inventory, isValidFilamentInventory);
   }
 };
 
@@ -1250,7 +1229,7 @@ async function synchronize() {
       if (!local || remote.updatedAt > local.updatedAt) merged.set(remote.id, remote);
     }
     state.records = Array.from(merged.values());
-    persist();
+    await persist();
     const remoteIds = new Set(remoteRecords.map((record) => record.id));
     const remoteById = new Map(remoteRecords.map((record) => [record.id, record]));
     const uploads = [];
@@ -1276,7 +1255,7 @@ async function synchronize() {
     }
     legacyVaultKey = "";
     needsStateMigration = false;
-    persist();
+    await persist();
     render();
     showMessage(elements.syncMessage, `Synchronisiert · ${state.records.filter((record) => !record.deletedAt).length} Einträge · ${new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`, false);
   } catch (error) {
@@ -1409,7 +1388,7 @@ elements.welcomeIntro.addEventListener("click", (event) => {
 });
 window.addEventListener("pagehide", () => void stopScanner());
 
-elements.itemList.addEventListener("click", (event) => {
+elements.itemList.addEventListener("click", async (event) => {
   const editButton = event.target.closest("[data-edit]");
   if (editButton) {
     const record = state.records.find((entry) => entry.id === editButton.dataset.edit);
@@ -1422,11 +1401,15 @@ elements.itemList.addEventListener("click", (event) => {
   if (!record || !window.confirm(`„${record.name}“ aus dem Katalog löschen?`)) return;
   record.deletedAt = new Date().toISOString();
   record.updatedAt = record.deletedAt;
-  persist();
+  try {
+    await persist();
+  } catch {
+    return;
+  }
   render();
   if (state.supabaseUrl && state.supabaseKey) void synchronize();
 });
-elements.catalogEditForm.addEventListener("submit", (event) => {
+elements.catalogEditForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const index = state.records.findIndex((record) => record.id === editingRecordId);
   if (index < 0) {
@@ -1449,7 +1432,7 @@ elements.catalogEditForm.addEventListener("submit", (event) => {
   }
   state.records[index] = updated;
   try {
-    persist();
+    await persist();
   } catch {
     state.records[index] = original;
     showMessage(elements.catalogEditMessage, "Änderungen konnten nicht gespeichert werden.");
@@ -1987,7 +1970,7 @@ elements.barcodeGenPrint.addEventListener("click", () => {
   frame.contentWindow.print();
 });
 
-elements.syncIdForm.addEventListener("submit", (event) => {
+elements.syncIdForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const syncId = elements.syncId.value.trim().toLowerCase();
   if (!isUuid(syncId)) {
@@ -1997,7 +1980,11 @@ elements.syncIdForm.addEventListener("submit", (event) => {
   if (syncId !== state.syncId && state.records.length &&
       !window.confirm("Die lokale Sammlung wird mit der ausgewählten Sammlungs-ID synchronisiert. Vorhandene Einträge werden mit dem Cloud-Bestand zusammengeführt. Fortfahren?")) return;
   state.syncId = syncId;
-  persist();
+  try {
+    await persist();
+  } catch {
+    return;
+  }
   render();
   showMessage(elements.syncIdMessage, "Sammlungs-ID gespeichert. Auf allen verbundenen Geräten dieselbe ID verwenden.", false);
   if (state.supabaseUrl && state.supabaseKey) void synchronize();
@@ -2080,7 +2067,7 @@ elements.importDataFile.addEventListener("change", async () => {
   const file = elements.importDataFile.files[0];
   if (!file) return;
   try {
-    if (file.size > 25 * 1024 * 1024) throw new Error("Die Sicherungsdatei ist größer als 25 MB.");
+    if (file.size > 250 * 1024 * 1024) throw new Error("Die Sicherungsdatei ist größer als 250 MB.");
     const backup = JSON.parse(await file.text());
     if (backup?.format !== "katalogic-backup" || backup.version !== 1 ||
         !isUuid(backup.syncId) || !Array.isArray(backup.records) ||
@@ -2107,7 +2094,7 @@ elements.importDataFile.addEventListener("change", async () => {
     if (backup.smallPartsInventory !== undefined) state.smallPartsInventory = backup.smallPartsInventory;
     legacyVaultKey = "";
     needsStateMigration = false;
-    persist();
+    await persist();
     window.dispatchEvent(new Event("katalogic:device-inventory-imported"));
     window.dispatchEvent(new Event("katalogic:game-inventory-imported"));
     window.dispatchEvent(new Event("katalogic:book-inventory-imported"));
@@ -2133,7 +2120,7 @@ elements.importDataFile.addEventListener("change", async () => {
   }
 });
 
-elements.settingsForm.addEventListener("submit", (event) => {
+elements.settingsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const url = elements.supabaseUrl.value.trim().replace(/\/+$/, "");
   const key = elements.supabaseKey.value.trim();
@@ -2148,7 +2135,7 @@ elements.settingsForm.addEventListener("submit", (event) => {
   state.supabaseUrl = url;
   state.supabaseKey = key;
   try {
-    persist();
+    await persist();
   } catch {
     return;
   }
@@ -2178,12 +2165,22 @@ try {
 applyTheme(savedTheme);
 render();
 if (needsStateMigration) {
-  persist();
-  needsStateMigration = false;
+  void persist().then(() => {
+    needsStateMigration = false;
+  }).catch(() => {});
 }
 if (state.supabaseUrl && state.supabaseKey) {
   showMessage(elements.syncMessage, "Verbinde mit Supabase …", false);
   void synchronize();
+} else {
+  void window.KatalogicLocalStorage.estimate().then((estimate) => {
+    if (!estimate || !Number.isFinite(estimate.usage) || !Number.isFinite(estimate.quota)) return;
+    const used = Math.round(estimate.usage / 1024 / 1024);
+    const quota = Math.round(estimate.quota / 1024 / 1024);
+    showMessage(elements.syncMessage, `Lokal in IndexedDB gespeichert · ca. ${used} MB von ${quota} MB Browser-Speicher belegt`, false);
+  }).catch((error) => {
+    console.error("Could not estimate available browser storage.", error);
+  });
 }
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   window.addEventListener("load", () => {

@@ -21,18 +21,7 @@
     <link rel="stylesheet" href="filaments.css?v=filaments-5">
     <link rel="stylesheet" href="small-parts.css?v=small-parts-2">
     <link rel="stylesheet" href="product-recognition.css?v=recognition-5">
-    <script src="pdf-export.js?v=pdf-2" defer></script>
-    <script src="chart-export.js?v=chart-2" defer></script>
-    <script src="app.js?v=management-9" defer></script>
-    <script src="devices.js?v=devices-6" defer></script>
-    <script src="games.js?v=games-9" defer></script>
-    <script src="books.js?v=books-9" defer></script>
-    <script src="films.js?v=films-5" defer></script>
-    <script src="filaments.js?v=filaments-5" defer></script>
-    <script src="small-parts.js?v=small-parts-10" defer></script>
-    <script src="management-search-scanner.js?v=search-scanner-2" defer></script>
-    <script src="product-recognition.js?v=recognition-8" defer></script>
-    <script src="localize-file-inputs.js?v=file-inputs-1" defer></script>
+    <script src="storage.js?v=storage-1" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -1158,7 +1147,7 @@
             </div>
             <span class="lock-icon" aria-hidden="true">⇩</span>
           </div>
-          <p class="muted settings-copy">Exportiere deine Sammlung als JSON-Datei oder stelle sie auf diesem oder einem anderen Gerät wieder her. Die Datei enthält deine Sammlungs-ID und alle Einträge. Der PDF-Export erstellt eine lesbare Bestandsübersicht, die sich nicht wieder importieren lässt.</p>
+          <p class="muted settings-copy">Die Sammlung wird lokal in IndexedDB gespeichert; der verfügbare Speicher hängt vom Browser und freien Gerätespeicher ab. Exportiere deine Sammlung regelmäßig als JSON-Datei oder stelle sie auf diesem oder einem anderen Gerät wieder her. Die Datei enthält deine Sammlungs-ID und alle Einträge. Der PDF-Export erstellt eine lesbare Bestandsübersicht, die sich nicht wieder importieren lässt.</p>
           <div class="button-row">
             <button id="export-data" class="button button-primary" type="button">Sammlung exportieren</button>
             <button id="import-data-button" class="button button-secondary" type="button">Sicherung importieren</button>
@@ -1188,7 +1177,7 @@
               <button id="sync-now" class="button button-secondary" type="button" disabled>Jetzt synchronisieren</button>
             </div>
           </form>
-          <p id="sync-message" class="form-message" role="status" aria-live="polite">Nur lokale Speicherung aktiv.</p>
+          <p id="sync-message" class="form-message" role="status" aria-live="polite">Lokale IndexedDB-Speicherung aktiv.</p>
         </section>
         <p class="privacy-note"><span aria-hidden="true">⌁</span> Offline lokal verfügbar · Supabase optional</p>
       </section>
