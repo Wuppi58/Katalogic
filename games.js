@@ -681,9 +681,11 @@
       game.condition, game.functionality, game.completeness,
       `${game.quantity || 1} ${game.quantity === 1 ? "Exemplar" : "Exemplare"}`,
       game.location, game.loanBorrower ? `Verliehen an ${game.loanBorrower}${game.loanDate ? ` (${game.loanDate})` : ""}` : "",
-      game.purchasePrice == null ? "" : `Kauf ${formatMoney(game.purchasePrice)}`,
-      game.estimatedValue == null ? "" : `Wert ${formatMoney(game.estimatedValue)}`
-    ].filter(Boolean).join(" · ");
+      game.purchasePrice == null ? "" : { label: "Kauf", value: formatMoney(game.purchasePrice) },
+      game.estimatedValue == null ? "" : { label: "Wert", value: formatMoney(game.estimatedValue) }
+    ].filter(Boolean).map((part) => typeof part === "string"
+      ? escapeHtml(part)
+      : `${escapeHtml(part.label)} <span class="money-amount">${escapeHtml(part.value)}</span>`).join(" · ");
   }
 
   function renderGames() {
@@ -727,7 +729,7 @@
       subtitle.textContent = [game.subtitle, game.platform].filter(Boolean).join(" · ");
       const meta = document.createElement("p");
       meta.className = "game-card-meta";
-      meta.textContent = gameSummary(game);
+      meta.innerHTML = gameSummary(game);
       const actions = document.createElement("div");
       actions.className = "game-card-actions";
       const detail = document.createElement("button");
@@ -764,7 +766,7 @@
     const entries = Array.isArray(values) ? values : Object.entries(values);
     const rows = entries.filter(([, value]) => value !== "" && value !== null && value !== undefined);
     if (!rows.length) return "";
-    return `<section class="game-detail-section"><h4>${escapeHtml(title)}</h4><dl>${rows.map(([label, value]) => `<div class="game-detail-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl></section>`;
+    return `<section class="game-detail-section"><h4>${escapeHtml(title)}</h4><dl>${rows.map(([label, value]) => `<div class="game-detail-row"><dt>${escapeHtml(label)}</dt><dd>${["Kaufpreis", "Geschätzter Wert"].includes(label) ? `<span class="money-amount">${escapeHtml(value)}</span>` : escapeHtml(value)}</dd></div>`).join("")}</dl></section>`;
   }
 
   function renderDetail(gameId) {

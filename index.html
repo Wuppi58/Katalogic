@@ -13,15 +13,16 @@
     <meta name="apple-mobile-web-app-title" content="Katalogic">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="styles.css?v=management-4">
+    <link rel="stylesheet" href="styles.css?v=management-7">
     <link rel="stylesheet" href="devices.css?v=devices-3">
     <link rel="stylesheet" href="games.css?v=games-4">
     <link rel="stylesheet" href="books.css?v=books-4">
     <link rel="stylesheet" href="films.css?v=films-2">
     <link rel="stylesheet" href="filaments.css?v=filaments-5">
+    <link rel="stylesheet" href="watches.css?v=watches-3">
     <link rel="stylesheet" href="small-parts.css?v=small-parts-2">
     <link rel="stylesheet" href="product-recognition.css?v=recognition-5">
-    <script src="storage.js?v=storage-2" defer></script>
+    <script src="storage.js?v=storage-3" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -98,7 +99,7 @@
         <div id="empty-state" class="empty-state">
           <span class="empty-icon" aria-hidden="true">✳</span>
           <h3>Hier beginnt deine Sammlung.</h3>
-          <p>Öffne einen Verwaltungsbereich, um Geräte, Spiele, Bücher, Filme oder Filamentrollen anzulegen.</p>
+          <p>Öffne einen Verwaltungsbereich, um Geräte, Uhren, Spiele, Bücher, Filme oder Filamentrollen anzulegen.</p>
         </div>
         <dialog id="catalog-edit-dialog" class="catalog-edit-dialog" aria-labelledby="catalog-edit-heading">
           <form id="catalog-edit-form" class="catalog-edit-form">
@@ -127,7 +128,7 @@
         <div class="page-heading">
           <p class="eyebrow">DEIN BESTAND</p>
           <h2 id="library-search-heading">In meiner Sammlung suchen</h2>
-          <p class="muted">Durchsuche Katalogeinträge, Geräte, Bücher, Spiele, Filme, Filamentrollen und Kleinteile – per Name, Kategorie, Barcode oder Scan.</p>
+          <p class="muted">Durchsuche Katalogeinträge, Geräte, Uhren, Bücher, Spiele, Filme, Filamentrollen und Kleinteile – per Name, Kategorie, Barcode oder Scan.</p>
         </div>
         <form id="library-search-form" class="card library-search-form">
           <label for="library-search-query">Artikel in deiner Sammlung suchen</label>
@@ -1046,6 +1047,7 @@
               <label>Einheit<input id="small-parts-unit" maxlength="24" value="Stück" required placeholder="Stück, m, g, Packung …"></label>
               <label>Aktueller Bestand<input id="small-parts-quantity" type="number" min="0" step="any" required value="0"></label>
               <label>Mindestbestand <span class="optional-label">(leer = nicht festgelegt)</span><input id="small-parts-reorder" type="number" min="0" step="any"></label>
+              <label>Kaufpreis (€)<input id="small-parts-purchase-price" type="number" min="0" step="0.01"></label>
               <label>Lagerort<select id="small-parts-location-select"><option value="">Kein Lagerort festgelegt</option></select></label>
               <label class="small-parts-wide">Kurzbeschreibung<textarea id="small-parts-description" rows="2" maxlength="1600"></textarea></label>
               <label class="small-parts-wide">Notizen<textarea id="small-parts-notes" rows="2" maxlength="3000"></textarea></label>
@@ -1074,6 +1076,77 @@
         <section id="small-parts-camera-panel" class="small-parts-camera-panel hidden" aria-label="Barcodekamera"><video id="small-parts-camera-video" playsinline muted></video><button id="small-parts-camera-stop" class="button button-secondary" type="button">Kamera stoppen</button><p id="small-parts-camera-message" class="form-message" role="status"></p></section>
         <div id="small-parts-list" class="small-parts-list" aria-live="polite"></div>
         <section id="small-parts-detail" class="card small-parts-detail hidden" aria-live="polite"></section>
+      </section>
+      <section id="watches-view" class="app-view hidden watches-view" data-management-view="watches" data-management-label="Uhren" data-management-icon="◷" aria-labelledby="watches-heading">
+        <div class="page-heading watches-heading">
+          <div>
+            <p class="eyebrow">SAMMLUNG & WERTE</p>
+            <h2 id="watches-heading">Uhren</h2>
+            <p class="muted">Armband-, Taschen-, Smart- und Wanduhren mit passenden Vorlagen für technische Details verwalten.</p>
+          </div>
+          <button id="watch-create" class="button button-primary" type="button">＋ Uhr hinzufügen</button>
+        </div>
+        <section id="watch-editor" class="card watch-editor hidden" aria-labelledby="watch-editor-heading">
+          <div class="watch-editor-heading">
+            <div><p class="eyebrow">UHRENDATEN</p><h3 id="watch-editor-heading">Uhr hinzufügen</h3></div>
+            <button id="watch-editor-close" class="icon-button" type="button" aria-label="Formular schließen">×</button>
+          </div>
+          <form id="watch-form" class="watch-form">
+            <input id="watch-id" type="hidden">
+            <div class="watch-form-grid">
+              <label class="watch-wide">Name<input id="watch-name" maxlength="160" required placeholder="z. B. Taucheruhr"></label>
+              <label>Uhrentyp<select id="watch-type">
+                <option>Armbanduhr</option><option>Taschenuhr</option><option>Smartwatch</option><option>Wanduhr</option><option>Tischuhr</option><option>Sonstige Uhr</option>
+              </select></label>
+              <label>Marke<input id="watch-brand" maxlength="120"></label>
+              <label>Modell<input id="watch-model" maxlength="120"></label>
+              <label>Referenznummer<input id="watch-reference" maxlength="120"></label>
+              <label>Seriennummer<input id="watch-serial" maxlength="120"></label>
+              <label>Werk / Antrieb<select id="watch-movement">
+                <option value="">Bitte auswählen</option><option>Automatik</option><option>Mechanisch (Handaufzug)</option><option>Quarz</option><option>Solar</option><option>Kinetisch</option><option>Smartwatch</option><option>Elektrisch</option><option>Sonstiges</option>
+              </select></label>
+              <label>Kaliber / Werk<input id="watch-caliber" maxlength="120"></label>
+              <label>Gehäusematerial<input id="watch-case" maxlength="120" placeholder="z. B. Edelstahl, Titan, Gold"></label>
+              <label>Gehäusedurchmesser (mm)<input id="watch-diameter" type="number" min="0" max="500" step="0.1"></label>
+              <label>Zifferblattfarbe<input id="watch-dial" maxlength="80"></label>
+              <label>Glas<input id="watch-crystal" maxlength="100" placeholder="z. B. Saphirglas"></label>
+              <label>Armband / Kette<input id="watch-strap" maxlength="120"></label>
+              <label>Wasserdichtigkeit<input id="watch-water-resistance" maxlength="80" placeholder="z. B. 10 bar / 100 m"></label>
+              <label>Zustand<select id="watch-condition">
+                <option value="">Bitte auswählen</option><option>Neu und originalverpackt</option><option>Wie neu</option><option>Sehr gut</option><option>Gut</option><option>Gebraucht</option><option>Schlecht</option>
+              </select></label>
+              <label>Funktionsfähigkeit<select id="watch-functionality">
+                <option value="">Bitte auswählen</option><option>Funktioniert einwandfrei</option><option>Eingeschränkt funktionsfähig</option><option>Defekt</option><option>Ungeprüft</option>
+              </select></label>
+              <label>Kaufdatum<input id="watch-purchase-date" type="date"></label>
+              <label>Kaufpreis (€)<input id="watch-purchase-price" type="number" min="0" step="0.01"></label>
+              <label>Wertschätzung (€)<input id="watch-estimated-value" type="number" min="0" step="0.01"></label>
+              <label>Händler / Bezugsquelle<input id="watch-source" maxlength="160"></label>
+              <label>Lagerort<input id="watch-location" maxlength="160"></label>
+            </div>
+            <fieldset class="watch-template-section">
+              <legend id="watch-template-heading">Vorlage: Armbanduhr</legend>
+              <p class="muted">Die Zusatzfelder passen sich an den gewählten Uhrentyp an.</p>
+              <div id="watch-template-fields" class="watch-form-grid"></div>
+            </fieldset>
+            <label class="watch-photo-input button button-secondary">Bilder hinzufügen (bis zu 8)<input id="watch-photos-input" type="file" accept="image/*" multiple></label>
+            <div id="watch-photo-gallery" class="watch-photo-gallery" aria-live="polite"></div>
+            <label>Notizen<textarea id="watch-notes" maxlength="3000" rows="3"></textarea></label>
+            <p id="watch-form-message" class="form-message" role="status" aria-live="polite"></p>
+            <div class="button-row"><button class="button button-primary" type="submit">Uhr speichern</button><button id="watch-cancel" class="button button-secondary" type="button" hidden>Abbrechen</button></div>
+          </form>
+        </section>
+        <section class="card watches-toolbar" aria-label="Uhren filtern">
+          <label for="watch-query">Uhren durchsuchen</label>
+          <input id="watch-query" type="search" autocomplete="off" placeholder="Name, Marke, Modell, Referenz, Werk, Standort …">
+          <label for="watch-filter-type">Uhrentyp</label>
+          <select id="watch-filter-type"><option value="">Alle Uhrentypen</option><option>Armbanduhr</option><option>Taschenuhr</option><option>Smartwatch</option><option>Wanduhr</option><option>Tischuhr</option><option>Sonstige Uhr</option></select>
+          <label for="watch-sort">Sortieren nach</label>
+          <select id="watch-sort"><option value="name">Name</option><option value="brand">Marke</option><option value="purchaseDate">Kaufdatum</option><option value="estimatedValue">Wertschätzung</option></select>
+          <p id="watch-result-count" class="form-message" role="status" aria-live="polite"></p>
+        </section>
+        <div id="watch-cards" class="watch-cards" aria-live="polite"></div>
+        <section id="watch-detail" class="card watch-detail hidden" aria-live="polite"></section>
       </section>
       <section id="barcode-view" class="app-view hidden" aria-labelledby="barcode-page-heading">
         <div class="page-heading">
@@ -1183,6 +1256,11 @@
         <p class="privacy-note"><span aria-hidden="true">⌁</span> Offline lokal verfügbar · Supabase optional</p>
       </section>
     </main>
+    <dialog id="image-viewer-dialog" class="image-viewer-dialog" aria-label="Bildansicht">
+      <button id="image-viewer-close" class="image-viewer-close" type="button" aria-label="Bildansicht schließen">×</button>
+      <img id="image-viewer-image" alt="">
+      <p id="image-viewer-caption" class="image-viewer-caption"></p>
+    </dialog>
     <dialog id="small-parts-booking-dialog" class="small-parts-booking-dialog" aria-labelledby="small-parts-booking-heading">
       <form id="small-parts-booking-form">
         <p class="eyebrow">BESTANDSBEWEGUNG</p>

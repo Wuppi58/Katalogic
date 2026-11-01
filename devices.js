@@ -728,7 +728,7 @@
       const photo = database.photos.find((item) => item.deviceId === device.id && safePhoto(item.dataUrl));
       const image = photo ? `<img src="${safePhoto(photo.dataUrl)}" alt="${html(device.name)}">` : `<div class="device-card-placeholder" aria-hidden="true">▣</div>`;
       const sample = device.isSample ? `<span class="device-sample-badge">BEISPIEL</span>` : "";
-      card.innerHTML = `${image}<div class="device-card-content"><div class="device-card-title"><div><h3>${html(device.name)}</h3><p>${html([device.manufacturer, device.model, device.variant, device.releaseYear].filter(Boolean).join(" · ") || "Hersteller / Modell nicht angegeben")}</p></div>${sample}</div><div class="device-card-meta"><span>${html([device.category, device.type].filter(Boolean).join(" · ") || "Kategorie offen")}</span><span>${html(device.condition || "Zustand offen")} · ${html(device.functionality || "Ungetestet")}</span><span>${html(device.location || "Kein Standort")}</span><span>Anzahl: ${html(device.quantity || 1)}</span>${device.estimatedValue != null ? `<span>Wert: ${html(money(device.estimatedValue))}</span>` : ""}</div><div class="device-card-actions"><button class="button button-secondary" data-action="view" data-id="${html(device.id)}" type="button">Details</button><button class="icon-button" data-action="edit" data-id="${html(device.id)}" type="button" aria-label="Gerät bearbeiten">✎</button><button class="icon-button" data-action="duplicate" data-id="${html(device.id)}" type="button" aria-label="Gerät duplizieren">⧉</button><button class="icon-button" data-action="delete" data-id="${html(device.id)}" type="button" aria-label="Gerät löschen">×</button></div></div>`;
+      card.innerHTML = `${image}<div class="device-card-content"><div class="device-card-title"><div><h3>${html(device.name)}</h3><p>${html([device.manufacturer, device.model, device.variant, device.releaseYear].filter(Boolean).join(" · ") || "Hersteller / Modell nicht angegeben")}</p></div>${sample}</div><div class="device-card-meta"><span>${html([device.category, device.type].filter(Boolean).join(" · ") || "Kategorie offen")}</span><span>${html(device.condition || "Zustand offen")} · ${html(device.functionality || "Ungetestet")}</span><span>${html(device.location || "Kein Standort")}</span><span>Anzahl: ${html(device.quantity || 1)}</span>${device.estimatedValue != null ? `<span>Wert: <span class="money-amount">${html(money(device.estimatedValue))}</span></span>` : ""}</div><div class="device-card-actions"><button class="button button-secondary" data-action="view" data-id="${html(device.id)}" type="button">Details</button><button class="icon-button" data-action="edit" data-id="${html(device.id)}" type="button" aria-label="Gerät bearbeiten">✎</button><button class="icon-button" data-action="duplicate" data-id="${html(device.id)}" type="button" aria-label="Gerät duplizieren">⧉</button><button class="icon-button" data-action="delete" data-id="${html(device.id)}" type="button" aria-label="Gerät löschen">×</button></div></div>`;
       container.append(card);
     }
     if (!records.length) {
@@ -744,7 +744,11 @@
   }
 
   function detailRow(label, value) {
-    return value === undefined || value === null || value === "" ? "" : `<div class="device-detail-row"><dt>${html(label)}</dt><dd>${html(value)}</dd></div>`;
+    if (value === undefined || value === null || value === "") return "";
+    const formattedValue = ["Kaufpreis", "Wertschätzung"].includes(label)
+      ? `<span class="money-amount">${html(value)}</span>`
+      : html(value);
+    return `<div class="device-detail-row"><dt>${html(label)}</dt><dd>${formattedValue}</dd></div>`;
   }
 
   function detailSection(title, rows) {

@@ -8,16 +8,18 @@
   const SCRIPT_PATHS = [
     "pdf-export.js?v=pdf-2",
     "chart-export.js?v=chart-2",
-    "app.js?v=management-11",
+    "app.js?v=management-16",
     "devices.js?v=devices-7",
     "games.js?v=games-11",
     "books.js?v=books-10",
     "films.js?v=films-6",
     "filaments.js?v=filaments-6",
-    "small-parts.js?v=small-parts-11",
+    "watches.js?v=watches-3",
+    "small-parts.js?v=small-parts-12",
     "management-search-scanner.js?v=search-scanner-2",
     "product-recognition.js?v=recognition-9",
-    "localize-file-inputs.js?v=file-inputs-1"
+    "localize-file-inputs.js?v=file-inputs-1",
+    "management-alphabet.js?v=alphabet-1"
   ];
 
   let database;

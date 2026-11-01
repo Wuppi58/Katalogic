@@ -499,9 +499,11 @@
       book.category, book.format, book.authors?.join(", "), book.publisher,
       book.year, book.condition, book.readingStatus,
       `${book.quantity || 1} ${book.quantity === 1 ? "Exemplar" : "Exemplare"}`,
-      book.location, book.estimatedValue == null ? "" : `Wert ${money(book.estimatedValue)}`,
+      book.location, book.estimatedValue == null ? "" : { label: "Wert", value: money(book.estimatedValue) },
       book.readingStatus === "Verliehen" && book.loan?.borrower ? `Verliehen an ${book.loan.borrower}` : ""
-    ].filter(Boolean).join(" · ");
+    ].filter(Boolean).map((part) => typeof part === "string"
+      ? escapeHtml(part)
+      : `${escapeHtml(part.label)} <span class="money-amount">${escapeHtml(part.value)}</span>`).join(" · ");
   }
 
   function renderBooks() {
@@ -544,7 +546,7 @@
       heading.append(title, subtitle);
       const meta = document.createElement("p");
       meta.className = "book-card-meta";
-      meta.textContent = summary(book);
+      meta.innerHTML = summary(book);
       const actions = document.createElement("div");
       actions.className = "book-card-actions";
       for (const [action, label] of [["view", "Details"], ["edit", "Bearbeiten"], ["duplicate", "Duplizieren"], ["read", "Gelesen"], ["unread", "Ungelesen"], ["delete", "×"]]) {
@@ -571,7 +573,7 @@
   function detailSection(title, values) {
     const rows = values.filter(([, value]) => value !== "" && value !== null && value !== undefined);
     if (!rows.length) return "";
-    return `<section class="book-detail-section"><h4>${escapeHtml(title)}</h4><dl>${rows.map(([label, value]) => `<div class="book-detail-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl></section>`;
+    return `<section class="book-detail-section"><h4>${escapeHtml(title)}</h4><dl>${rows.map(([label, value]) => `<div class="book-detail-row"><dt>${escapeHtml(label)}</dt><dd>${["Kaufpreis", "Geschätzter Wert"].includes(label) ? `<span class="money-amount">${escapeHtml(value)}</span>` : escapeHtml(value)}</dd></div>`).join("")}</dl></section>`;
   }
 
   function readingStatusControl(book) {

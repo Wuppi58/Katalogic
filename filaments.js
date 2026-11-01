@@ -821,7 +821,7 @@
   function fieldRows(rows) {
     const available = rows.filter(([, value]) => value !== "" && value !== null && value !== undefined);
     if (!available.length) return "";
-    return `<dl>${available.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>`;
+    return `<dl>${available.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${["Kaufpreis", "Restwert-Schätzung"].includes(label) ? `<span class="money-amount">${escapeHtml(value)}</span>` : escapeHtml(value)}</dd></div>`).join("")}</dl>`;
   }
 
   function section(title, rows) {

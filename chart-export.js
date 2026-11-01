@@ -33,6 +33,7 @@
 
   function charts(state) {
     const devices = state.deviceInventory?.devices || [];
+    const watches = state.watchInventory?.watches || [];
     const games = state.gameInventory?.games || [];
     const books = state.bookInventory?.books || [];
     const films = state.filmInventory?.entries || [];
@@ -53,8 +54,9 @@
       {
         title: "Einträge pro Bereich",
         unit: "",
-        data: [["Geräte", devices.length], ["Spiele", games.length], ["Bücher", books.length], ["Filme", films.length], ["Filamentrollen", spools.length], ["Kleinteile", parts.length]]
+        data: [["Geräte", devices.length], ["Uhren", watches.length], ["Spiele", games.length], ["Bücher", books.length], ["Filme", films.length], ["Filamentrollen", spools.length], ["Kleinteile", parts.length]]
       },
+      { title: "Uhren nach Typ", unit: "", data: count(watches.map((watch) => watch.type)) },
       { title: "Spiele nach Plattform", unit: "", data: count(games.map((game) => game.platform)) },
       { title: "Geräte nach Kategorie", unit: "", data: count(devices.map((device) => device.category)) },
       { title: "Bücher nach Kategorie", unit: "", data: count(books.map((book) => book.category)) },

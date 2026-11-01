@@ -21,6 +21,7 @@
     const value = $(selector).value.trim();
     return value === "" ? null : Number(value);
   };
+  const money = (value) => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(value);
   const uniqueCode = (prefix, rows) => {
     let code;
     do {
@@ -213,8 +214,15 @@
       item.category, item.manufacturer, item.partNumber ? `Art.-Nr. ${item.partNumber}` : "",
       `Bestand: ${item.quantity} ${item.unit}`,
       item.reorderLevel === null ? "Mindestbestand nicht festgelegt" : `Mindestbestand: ${item.reorderLevel} ${item.unit}`,
-      locationName(item.locationId), `Kennung: ${item.barcode}`
+      locationName(item.locationId), `Kennung: ${item.barcode}`,
+      item.purchasePrice == null ? "" : "Kaufpreis:"
     ].filter(Boolean).join(" · ");
+    if (item.purchasePrice != null) {
+      const amount = document.createElement("span");
+      amount.className = "money-amount";
+      amount.textContent = money(item.purchasePrice);
+      facts.append(" ", amount);
+    }
     const actions = document.createElement("div");
     actions.className = "button-row small-parts-actions";
     const details = action("Details / Historie", () => openDetails(item.id));
@@ -247,6 +255,13 @@
     heading.textContent = `Buchungshistorie: ${item.name}`;
     const copy = document.createElement("p");
     copy.textContent = `${item.quantity} ${item.unit} verfügbar · ${locationName(item.locationId)}`;
+    if (item.purchasePrice != null) {
+      copy.append(" · Kaufpreis: ");
+      const amount = document.createElement("span");
+      amount.className = "money-amount";
+      amount.textContent = money(item.purchasePrice);
+      copy.append(amount);
+    }
     const table = document.createElement("table");
     table.className = "small-parts-history";
     const head = document.createElement("thead");
@@ -307,6 +322,7 @@
     $("#small-parts-unit").value = item?.unit || "Stück";
     $("#small-parts-quantity").value = item?.quantity ?? 0;
     $("#small-parts-reorder").value = item?.reorderLevel ?? "";
+    $("#small-parts-purchase-price").value = item?.purchasePrice ?? "";
     $("#small-parts-location-select").value = item?.locationId || "";
     $("#small-parts-description").value = item?.description || "";
     $("#small-parts-notes").value = item?.notes || "";
@@ -556,6 +572,7 @@
         unit: $("#small-parts-unit").value.trim(),
         quantity: number("#small-parts-quantity"),
         reorderLevel: number("#small-parts-reorder"),
+        purchasePrice: number("#small-parts-purchase-price"),
         locationId: $("#small-parts-location-select").value,
         description: $("#small-parts-description").value.trim(),
         notes: $("#small-parts-notes").value.trim(),
@@ -565,6 +582,9 @@
         updatedAt: now(),
         archivedAt: ""
       };
+      if (item.purchasePrice !== null && (!Number.isFinite(item.purchasePrice) || item.purchasePrice < 0)) {
+        throw new Error("Der Kaufpreis muss ein gültiger, nicht negativer Betrag sein.");
+      }
       if (!item.barcode) item.barcode = uniqueCode("KP", data.items);
       const current = data.items.find((entry) => entry.id === editingId);
       if (current) {

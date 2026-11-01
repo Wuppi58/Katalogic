@@ -1,0 +1,99 @@
+body:has(#watches-view:not(.hidden)) .layout { width: min(100% - 40px, 1120px); }
+.watches-heading,
+.watch-editor-heading,
+.watch-card-heading,
+.watch-card-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.watches-heading { margin-bottom: 16px; }
+.watches-heading h2 { margin-bottom: 7px; }
+.watches-heading .muted { margin-bottom: 0; }
+.watch-editor,
+.watches-toolbar { margin-top: 14px; padding: 18px; }
+.watch-editor-heading { margin-bottom: 12px; }
+.watch-editor-heading h3 { margin: 0; font-size: 19px; }
+.watch-form { display: grid; gap: 12px; }
+.watch-form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px 12px; }
+.watch-form-grid label,
+.watch-form > label { min-width: 0; margin: 0; }
+.watch-form select,
+.watch-form input:not([type="file"]),
+.watch-form textarea,
+.watches-toolbar input,
+.watches-toolbar select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 39px;
+  margin-top: 5px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+.watch-form textarea { resize: vertical; }
+.watch-wide { grid-column: 1 / -1; }
+.watch-template-section { min-width: 0; margin: 2px 0 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+.watch-template-section legend { padding: 0 7px; font-size: 13px; font-weight: 800; }
+.watch-template-section > .muted { margin: 0 0 10px; font-size: 11px; }
+.watches-toolbar { display: grid; grid-template-columns: auto minmax(180px, 1.5fr) auto minmax(160px, .7fr) auto; align-items: center; gap: 8px 12px; }
+.watches-toolbar label { margin: 0; font-size: 12px; font-weight: 700; }
+.watches-toolbar input,
+.watches-toolbar select { margin: 0; }
+.watches-toolbar .form-message { grid-column: 1 / -1; min-height: 0; margin: 0; }
+.watch-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.watch-card { display: flex; min-width: 0; flex-direction: column; gap: 9px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: 0 5px 18px rgba(35, 45, 56, .045); }
+.watch-card-gallery { display: flex; gap: 6px; overflow-x: auto; }
+.watch-card-gallery img { width: 76px; height: 66px; flex: 0 0 76px; border-radius: 8px; object-fit: cover; background: var(--paper); }
+.watch-card-heading { align-items: flex-start; }
+.watch-card-heading h3 { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: 15px; }
+.watch-type-badge { flex: 0 0 auto; padding: 4px 8px; border-radius: 999px; background: color-mix(in srgb, var(--green) 12%, var(--card)); color: var(--green); font-size: 10px; font-weight: 800; }
+.watch-card-subtitle { min-height: 14px; margin: 0; color: var(--muted); font-size: 11px; }
+.watch-card-details { display: grid; grid-template-columns: minmax(80px, .7fr) 1.3fr; gap: 5px 9px; margin: 0; font-size: 10px; line-height: 1.45; }
+.watch-card-details dt { color: var(--muted); }
+.watch-card-details dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.watch-card-footer { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; line-height: 1.5; }
+.watch-card-actions { justify-content: flex-start; }
+.watch-card-actions .button { min-height: 32px; padding: 0 10px; font-size: 10px; }
+.watch-empty-state { grid-column: 1 / -1; padding: 28px 18px; border: 1px dashed var(--line); border-radius: 15px; color: var(--muted); text-align: center; }
+.watch-detail { margin-top: 16px; padding: 18px; }
+.watch-detail-heading,
+.watch-detail-actions { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.watch-detail-heading { margin-bottom: 12px; }
+.watch-detail-heading h3 { margin: 0 0 5px; font-size: 19px; }
+.watch-detail-heading .eyebrow,
+.watch-detail-heading .muted { margin-bottom: 5px; }
+.watch-detail-gallery { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 14px; }
+.watch-detail-gallery img { width: min(220px, 30vw); height: 170px; border-radius: 10px; object-fit: cover; background: var(--paper); }
+.watch-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.watch-detail-section { min-width: 0; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--card) 90%, var(--paper)); }
+.watch-detail-section h4 { margin: 0 0 8px; color: var(--green); font-size: 12px; }
+.watch-detail-section dl { display: grid; gap: 6px; margin: 0; }
+.watch-detail-section dt,
+.watch-detail-section dd { margin: 0; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.watch-detail-section dt { color: var(--muted); font-weight: 700; }
+.watch-photo-input { position: relative; width: fit-content; min-height: 40px; margin: 0; overflow: hidden; cursor: pointer; }
+.watch-photo-input input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.watch-photo-gallery { display: flex; flex-wrap: wrap; gap: 9px; }
+.watch-photo { position: relative; width: 92px; margin: 0; }
+.watch-photo img { display: block; width: 92px; height: 82px; border-radius: 9px; object-fit: cover; background: var(--paper); }
+.watch-photo .icon-button { position: absolute; top: 3px; right: 3px; width: 25px; height: 25px; border-radius: 50%; }
+.watch-empty-hint { margin: 3px 0; color: var(--muted); font-size: 11px; }
+
+@media (max-width: 900px) {
+  .watch-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .watch-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  body:has(#watches-view:not(.hidden)) .layout { width: min(100% - 24px, 1120px); }
+  .watches-heading { align-items: flex-start; }
+  .watches-heading > .button { flex: 0 0 auto; }
+  .watch-cards { grid-template-columns: 1fr; }
+  .watch-detail-grid { grid-template-columns: 1fr; }
+  .watch-detail-gallery img { width: 100%; max-width: 260px; height: 180px; }
+  .watch-form-grid { grid-template-columns: 1fr; }
+  .watch-wide { grid-column: auto; }
+  .watches-toolbar { grid-template-columns: 1fr 1fr; }
+  .watches-toolbar input { grid-column: 1 / -1; }
+}

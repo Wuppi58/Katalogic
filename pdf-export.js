@@ -135,6 +135,13 @@
         }))
       },
       {
+        title: "Uhren",
+        rows: (state.watchInventory?.watches || []).map((watch) => ({
+          name: watch.name,
+          detail: join([watch.type, watch.brand, watch.model, watch.reference, watch.movement, watch.condition, watch.location])
+        }))
+      },
+      {
         title: "Spiele",
         rows: (state.gameInventory?.games || []).map((game) => ({
           name: game.name,

@@ -50,6 +50,7 @@ const elements = {
   gamesView: document.querySelector("#games-view"),
   filamentsView: document.querySelector("#filaments-view"),
   smallPartsView: document.querySelector("#small-parts-view"),
+  watchesView: document.querySelector("#watches-view"),
   syncView: document.querySelector("#sync-view"),
   barcodeView: document.querySelector("#barcode-view"),
   barcodeGenForm: document.querySelector("#barcode-generator-form"),
@@ -181,11 +182,12 @@ function loadState() {
       bookInventory: isValidBookInventory(saved.bookInventory) ? saved.bookInventory : null,
       filmInventory: isValidFilmInventory(saved.filmInventory) ? saved.filmInventory : null,
       filamentInventory: isValidFilamentInventory(saved.filamentInventory) ? saved.filamentInventory : null,
-      smallPartsInventory: isValidSmallPartsInventory(saved.smallPartsInventory) ? saved.smallPartsInventory : null
+      smallPartsInventory: isValidSmallPartsInventory(saved.smallPartsInventory) ? saved.smallPartsInventory : null,
+      watchInventory: isValidWatchInventory(saved.watchInventory) ? saved.watchInventory : null
     };
   } catch (error) {
     console.error("Could not load local Katalogic data.", error);
-    return { syncId: crypto.randomUUID(), supabaseUrl: "", supabaseKey: "", records: [], gameInventory: null, bookInventory: null, filmInventory: null, filamentInventory: null, smallPartsInventory: null };
+    return { syncId: crypto.randomUUID(), supabaseUrl: "", supabaseKey: "", records: [], gameInventory: null, bookInventory: null, filmInventory: null, filamentInventory: null, smallPartsInventory: null, watchInventory: null };
   }
 }
 
@@ -430,6 +432,8 @@ function isValidSmallPartsInventory(inventory) {
     string(item.unit) && item.unit.trim().length > 0 &&
     string(item.barcode) && item.barcode.trim().length > 0 &&
     Number.isFinite(item.quantity) && item.quantity >= 0 &&
+    (item.purchasePrice === undefined || item.purchasePrice === null ||
+      (Number.isFinite(item.purchasePrice) && item.purchasePrice >= 0)) &&
     (item.reorderLevel === null || item.reorderLevel === undefined ||
       (Number.isFinite(item.reorderLevel) && item.reorderLevel >= 0)) &&
     (item.images === undefined || (Array.isArray(item.images) && item.images.length <= 8 && item.images.every(image))) &&
@@ -461,6 +465,27 @@ function isValidSmallPartsInventory(inventory) {
       }
       return true;
     })
+  );
+}
+
+function isValidWatchInventory(inventory) {
+  const isString = (value) => typeof value === "string";
+  const validWatch = (watch) => watch && typeof watch === "object" && !Array.isArray(watch) &&
+    isString(watch.id) && isString(watch.name) && watch.name.trim().length > 0 &&
+    ["type", "brand", "model", "reference", "serial", "movement", "caliber", "caseMaterial",
+      "caseDiameter", "dialColor", "crystal", "strap", "waterResistance", "condition",
+      "functionality", "purchaseDate", "purchasePrice", "estimatedValue", "source", "location",
+      "notes", "updatedAt"].every((key) => watch[key] === undefined || isString(watch[key])) &&
+    (watch.photos === undefined || (Array.isArray(watch.photos) && watch.photos.length <= 8 &&
+      watch.photos.every((photo) => isString(photo) && photo.length <= 700_000 &&
+        /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(photo)))) &&
+    (watch.templateData === undefined || (watch.templateData && typeof watch.templateData === "object" &&
+      !Array.isArray(watch.templateData) && Object.values(watch.templateData).every(isString)));
+  return inventory === undefined || inventory === null || (
+    inventory && typeof inventory === "object" && !Array.isArray(inventory) &&
+    Array.isArray(inventory.watches) && inventory.watches.every(validWatch) &&
+    new Set(inventory.watches.map((watch) => watch.id)).size === inventory.watches.length &&
+    (inventory.view === undefined || inventory.view === "grid" || inventory.view === "list")
   );
 }
 
@@ -500,7 +525,7 @@ async function persist() {
     for (const key of Object.keys(state)) delete state[key];
     Object.assign(state, restoredState);
     legacyVaultKey = typeof persistedState.legacyMigrationKey === "string" ? persistedState.legacyMigrationKey : "";
-    for (const category of ["device", "game", "book", "film", "filament", "small-parts"]) {
+    for (const category of ["device", "game", "book", "film", "filament", "small-parts", "watch"]) {
       window.dispatchEvent(new Event(`katalogic:${category}-inventory-imported`));
     }
     const reason = error.name === "QuotaExceededError"
@@ -576,6 +601,15 @@ window.KatalogicFilamentStorage = {
   },
   save(inventory) {
     return saveInventoryState("filamentInventory", inventory, isValidFilamentInventory);
+  }
+};
+
+window.KatalogicWatchStorage = {
+  load() {
+    return structuredClone(state.watchInventory || { watches: [], view: "grid" });
+  },
+  save(inventory) {
+    return saveInventoryState("watchInventory", inventory, isValidWatchInventory);
   }
 };
 
@@ -672,6 +706,7 @@ function refreshCategoryFilter(records) {
   const selected = elements.categoryFilter.value;
   const collections = [
     ["Geräte", "__view_devices__", state.deviceInventory?.devices?.length || 0],
+    ["Uhren", "__view_watches__", state.watchInventory?.watches?.length || 0],
     ["Bücher", "__view_books__", state.bookInventory?.books?.length || 0],
     ["Filme", "__view_films__", state.filmInventory?.entries?.length || 0],
     ["Spiele", "__view_games__", state.gameInventory?.games?.length || 0],
@@ -704,6 +739,7 @@ function showAppView(view) {
     games: elements.gamesView,
     filaments: elements.filamentsView,
     "small-parts": elements.smallPartsView,
+    watches: elements.watchesView,
     barcode: elements.barcodeView,
     sync: elements.syncView
   };
@@ -725,8 +761,12 @@ function showAppView(view) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+window.addEventListener("katalogic:show-view", (event) => {
+  if (typeof event.detail === "string") showAppView(event.detail);
+});
+
 function openCatalogEditor(record) {
-  const managedCategories = new Set(["Geräte", "Spiele", "Bücher", "Filme", "Filamente"]);
+  const managedCategories = new Set(["Geräte", "Uhren", "Spiele", "Bücher", "Filme", "Filamente"]);
   const categories = [...new Set([
     ...DEFAULT_CATEGORIES,
     ...state.records.map((entry) => entry.category.trim()).filter((category) => category && !managedCategories.has(category)),
@@ -757,6 +797,7 @@ function renderLibrarySearch() {
   let deviceData = { devices: [], photos: [] };
   let bookData = { books: [], series: [] };
   let filmData = { entries: [], franchises: [] };
+  let watchData = { watches: [] };
   const searchErrors = [];
   let filamentData = { products: [], spools: [] };
   let smallPartsData = { items: [], locations: [] };
@@ -817,6 +858,12 @@ function renderLibrarySearch() {
   } catch (error) {
     console.error("Could not search saved small parts.", error);
     searchErrors.push("Kleinteile konnten nicht durchsucht werden.");
+  }
+  try {
+    watchData = window.KatalogicWatchStorage.load();
+  } catch (error) {
+    console.error("Could not search saved watches.", error);
+    searchErrors.push("Uhren konnten nicht durchsucht werden.");
   }
   const deviceMatches = deviceData.devices.filter((device) => {
     const searchable = [
@@ -883,7 +930,18 @@ function renderLibrarySearch() {
     ].filter(Boolean).join(" ").toLocaleLowerCase("de");
     return isNumericQuery && item.barcode && stripZeros(item.barcode) === stripZeros(query) || searchable.includes(query);
   }).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
-  const totalMatches = matches.length + deviceMatches.length + gameMatches.length + bookMatches.length + filmMatches.length + filamentMatches.length + smallPartsMatches.length;
+  const watchMatches = watchData.watches.filter((watch) => {
+    const searchable = [
+      "Uhren", watch.name, watch.type, watch.brand, watch.model, watch.reference, watch.serial,
+      watch.movement, watch.caliber, watch.caseMaterial, watch.caseDiameter, watch.dialColor,
+      watch.crystal, watch.strap, watch.waterResistance, watch.condition, watch.functionality,
+      watch.purchaseDate, watch.purchasePrice, watch.estimatedValue, watch.source, watch.location,
+      watch.notes, ...Object.values(watch.templateData || {})
+    ].filter(Boolean).join(" ").toLocaleLowerCase("de");
+    return isNumericQuery && watch.serial && stripZeros(watch.serial.replace(/\D/g, "")) === stripZeros(query) ||
+      searchable.includes(query);
+  }).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  const totalMatches = matches.length + deviceMatches.length + gameMatches.length + bookMatches.length + filmMatches.length + filamentMatches.length + smallPartsMatches.length + watchMatches.length;
   if (!totalMatches) {
     const noMatches = "Nicht in deinem Bestand gefunden. Prüfe den Suchbegriff oder den Barcode.";
     showMessage(elements.librarySearchMessage, searchErrors.length ? `${noMatches} ${searchErrors.join(" ")} Prüfe die gespeicherten Daten.` : noMatches, searchErrors.length > 0);
@@ -891,7 +949,7 @@ function renderLibrarySearch() {
   }
   showMessage(
     elements.librarySearchMessage,
-    `${totalMatches} Treffer in Sammlung, Geräte-, Spiele-, Bücher-, Film-, Filament- und Kleinteilebestand gefunden.${searchErrors.length ? ` ${searchErrors.join(" ")} Prüfe die gespeicherten Daten.` : ""}`,
+    `${totalMatches} Treffer in Sammlung, Geräte-, Uhren-, Spiele-, Bücher-, Film-, Filament- und Kleinteilebestand gefunden.${searchErrors.length ? ` ${searchErrors.join(" ")} Prüfe die gespeicherten Daten.` : ""}`,
     searchErrors.length > 0
   );
   for (const record of matches) {
@@ -1059,6 +1117,29 @@ function renderLibrarySearch() {
     card.append(copy);
     elements.librarySearchResults.append(card);
   }
+  for (const watch of watchMatches) {
+    const card = document.createElement("article");
+    card.className = "item-card";
+    appendRecordPhotos(card, { name: watch.name, imageUrls: watch.photos || [], imageUrl: "" });
+    const copy = document.createElement("div");
+    copy.className = "item-copy";
+    const title = document.createElement("h3");
+    title.textContent = watch.name;
+    const details = document.createElement("p");
+    details.textContent = [
+      "Uhren", watch.type, watch.brand, watch.model, watch.reference,
+      watch.serial ? `Seriennummer: ${watch.serial}` : "",
+      watch.movement, watch.location ? `Standort: ${watch.location}` : ""
+    ].filter(Boolean).join(" · ");
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "button button-secondary";
+    open.textContent = "In Uhren öffnen";
+    open.dataset.openWatch = watch.id;
+    copy.append(title, details);
+    card.append(copy, open);
+    elements.librarySearchResults.append(card);
+  }
 }
 
 function render() {
@@ -1073,6 +1154,7 @@ function render() {
     films: elements.filmsView,
     games: elements.gamesView,
     filaments: elements.filamentsView,
+    watches: elements.watchesView,
     barcode: elements.barcodeView,
     sync: elements.syncView
   };
@@ -1143,7 +1225,7 @@ function render() {
       copy.className = "item-copy";
       copy.innerHTML = `<h3>${escapeHtml(record.name)}</h3>${notes}${deviceDetails}${location}${accessory}${barcode}${gameDetailsMarkup}${sourceLink}`;
       card.append(copy);
-      const managedCategory = ["Geräte", "Spiele", "Bücher", "Filme"].includes(record.category);
+      const managedCategory = ["Geräte", "Uhren", "Spiele", "Bücher", "Filme"].includes(record.category);
       const editAction = !managedCategory && !record.deviceDetails && !record.accessoryType
             ? `<button class="icon-button" type="button" data-edit="${escapeHtml(record.id)}" aria-label="Eintrag ${escapeHtml(record.name)} bearbeiten" title="Bearbeiten">✎</button>`
             : "";
@@ -1336,6 +1418,7 @@ elements.categoryFilter.addEventListener("change", render);
 elements.categoryFilter.addEventListener("change", () => {
   const viewByCollection = {
     __view_devices__: "devices",
+    __view_watches__: "watches",
     __view_books__: "books",
     __view_films__: "films",
     __view_games__: "games",
@@ -1366,6 +1449,22 @@ elements.taskbar.addEventListener("click", (event) => {
   }
   if (button) showAppView(button.dataset.view);
 });
+document.querySelector(".layout").addEventListener("click", (event) => {
+  const image = event.target.closest("img");
+  if (!image || !image.closest(".app-view[data-management-view]")) return;
+  const viewer = document.querySelector("#image-viewer-dialog");
+  const viewerImage = document.querySelector("#image-viewer-image");
+  viewerImage.src = image.currentSrc || image.src;
+  viewerImage.alt = image.alt || "Vergrößertes Bild";
+  document.querySelector("#image-viewer-caption").textContent = image.alt || "";
+  viewer.showModal();
+});
+document.querySelector("#image-viewer-close").addEventListener("click", () => {
+  document.querySelector("#image-viewer-dialog").close();
+});
+document.querySelector("#image-viewer-dialog").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) event.currentTarget.close();
+});
 document.addEventListener("click", (event) => {
   if (!elements.managementNavigation.contains(event.target)) {
     elements.managementMenu.classList.add("hidden");
@@ -1376,6 +1475,8 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     elements.managementMenu.classList.add("hidden");
     elements.managementToggle.setAttribute("aria-expanded", "false");
+    const imageViewer = document.querySelector("#image-viewer-dialog");
+    if (imageViewer.open) imageViewer.close();
   }
 });
 elements.homeLink.addEventListener("click", (event) => {
@@ -2037,7 +2138,8 @@ elements.exportData.addEventListener("click", () => {
       bookInventory: state.bookInventory,
       filmInventory: state.filmInventory,
       filamentInventory: state.filamentInventory,
-      smallPartsInventory: state.smallPartsInventory
+      smallPartsInventory: state.smallPartsInventory,
+      watchInventory: state.watchInventory
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -2055,7 +2157,8 @@ elements.exportData.addEventListener("click", () => {
     const filamentCount = state.filamentInventory?.spools?.length || 0;
     const filamentAmsCount = state.filamentInventory?.amsUnits?.length || 0;
     const smallPartsCount = state.smallPartsInventory?.items?.length || 0;
-    showMessage(elements.backupMessage, `${state.records.filter((record) => !record.deletedAt).length} Einträge, ${deviceCount} Geräte, ${gameCount} Spiele, ${bookCount} Bücher, ${filmCount} Filme, ${filamentCount} Filamentrollen, ${smallPartsCount} Kleinteile und ${filamentAmsCount} AMS-Zuordnungen exportiert. Die Sicherungsdatei vertraulich aufbewahren.`, false);
+    const watchCount = state.watchInventory?.watches?.length || 0;
+    showMessage(elements.backupMessage, `${state.records.filter((record) => !record.deletedAt).length} Einträge, ${deviceCount} Geräte, ${watchCount} Uhren, ${gameCount} Spiele, ${bookCount} Bücher, ${filmCount} Filme, ${filamentCount} Filamentrollen, ${smallPartsCount} Kleinteile und ${filamentAmsCount} AMS-Zuordnungen exportiert. Die Sicherungsdatei vertraulich aufbewahren.`, false);
   } catch (error) {
     console.error("Could not export Katalogic data.", error);
     showMessage(elements.backupMessage, `Export fehlgeschlagen: ${error.message}`);
@@ -2077,7 +2180,8 @@ elements.importDataFile.addEventListener("change", async () => {
         (backup.bookInventory !== undefined && !isValidBookInventory(backup.bookInventory)) ||
         (backup.filmInventory !== undefined && !isValidFilmInventory(backup.filmInventory)) ||
         (backup.filamentInventory !== undefined && !isValidFilamentInventory(backup.filamentInventory)) ||
-        (backup.smallPartsInventory !== undefined && !isValidSmallPartsInventory(backup.smallPartsInventory))) {
+        (backup.smallPartsInventory !== undefined && !isValidSmallPartsInventory(backup.smallPartsInventory)) ||
+        (backup.watchInventory !== undefined && !isValidWatchInventory(backup.watchInventory))) {
       throw new Error("Die Datei ist keine gültige Katalogic-Sicherung.");
     }
     if (new Set(backup.records.map((record) => record.id)).size !== backup.records.length) {
@@ -2092,6 +2196,7 @@ elements.importDataFile.addEventListener("change", async () => {
     if (backup.filmInventory !== undefined) state.filmInventory = backup.filmInventory;
     if (backup.filamentInventory !== undefined) state.filamentInventory = backup.filamentInventory;
     if (backup.smallPartsInventory !== undefined) state.smallPartsInventory = backup.smallPartsInventory;
+    if (backup.watchInventory !== undefined) state.watchInventory = backup.watchInventory;
     legacyVaultKey = "";
     needsStateMigration = false;
     await persist();
@@ -2101,6 +2206,7 @@ elements.importDataFile.addEventListener("change", async () => {
     window.dispatchEvent(new Event("katalogic:film-inventory-imported"));
     window.dispatchEvent(new Event("katalogic:filament-inventory-imported"));
     window.dispatchEvent(new Event("katalogic:small-parts-inventory-imported"));
+    window.dispatchEvent(new Event("katalogic:watch-inventory-imported"));
     render();
     const importedCount = state.records.filter((record) => !record.deletedAt).length;
     const importedDevices = backup.deviceInventory?.devices?.length || 0;
@@ -2110,7 +2216,8 @@ elements.importDataFile.addEventListener("change", async () => {
     const importedFilaments = backup.filamentInventory?.spools?.length || 0;
     const importedSmallParts = backup.smallPartsInventory?.items?.length || 0;
     const importedAms = backup.filamentInventory?.amsUnits?.length || 0;
-    showMessage(elements.backupMessage, `${importedCount} ${importedCount === 1 ? "Eintrag" : "Einträge"}, ${importedDevices} Geräte, ${importedGames} Spiele, ${importedBooks} Bücher, ${importedFilms} Filme, ${importedFilaments} Filamentrollen, ${importedSmallParts} Kleinteile und ${importedAms} AMS-Zuordnungen importiert.`, false);
+    const importedWatches = backup.watchInventory?.watches?.length || 0;
+    showMessage(elements.backupMessage, `${importedCount} ${importedCount === 1 ? "Eintrag" : "Einträge"}, ${importedDevices} Geräte, ${importedWatches} Uhren, ${importedGames} Spiele, ${importedBooks} Bücher, ${importedFilms} Filme, ${importedFilaments} Filamentrollen, ${importedSmallParts} Kleinteile und ${importedAms} AMS-Zuordnungen importiert.`, false);
     if (state.supabaseUrl && state.supabaseKey) void synchronize();
   } catch (error) {
     console.error("Could not import Katalogic backup.", error);

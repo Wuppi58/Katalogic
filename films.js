@@ -418,8 +418,10 @@
       entry.franchise, entry.part ? `Teil ${entry.part}` : "", entry.seriesName,
       entry.loanBorrower ? `Verliehen an ${entry.loanBorrower}${entry.loanDate ? ` (${entry.loanDate})` : ""}` : "",
       entry.seasonNumber ? `Staffel ${entry.seasonNumber}` : "",
-      entry.estimatedValue == null ? "" : `Wert ${money(entry.estimatedValue)}`
-    ].filter(Boolean).join(" · ");
+      entry.estimatedValue == null ? "" : { label: "Wert", value: money(entry.estimatedValue) }
+    ].filter(Boolean).map((part) => typeof part === "string"
+      ? escapeHtml(part)
+      : `${escapeHtml(part.label)} <span class="money-amount">${escapeHtml(part.value)}</span>`).join(" · ");
   }
 
   function renderEntries() {
@@ -462,7 +464,7 @@
       titleGroup.append(title, subtitle);
       const meta = document.createElement("p");
       meta.className = "film-card-meta";
-      meta.textContent = summary(entry);
+      meta.innerHTML = summary(entry);
       const actions = document.createElement("div");
       actions.className = "film-card-actions";
       for (const [action, label] of [["view", "Details"], ["edit", "Bearbeiten"], ["duplicate", "Duplizieren"], ["delete", "×"]]) {
@@ -484,7 +486,7 @@
   function detailSection(title, values) {
     const rows = values.filter(([, value]) => value !== "" && value !== null && value !== undefined);
     if (!rows.length) return "";
-    return `<section class="film-detail-section"><h4>${escapeHtml(title)}</h4><dl>${rows.map(([label, value]) => `<div class="film-detail-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl></section>`;
+    return `<section class="film-detail-section"><h4>${escapeHtml(title)}</h4><dl>${rows.map(([label, value]) => `<div class="film-detail-row"><dt>${escapeHtml(label)}</dt><dd>${["Kaufpreis", "Geschätzter Wert"].includes(label) ? `<span class="money-amount">${escapeHtml(value)}</span>` : escapeHtml(value)}</dd></div>`).join("")}</dl></section>`;
   }
 
   function renderDetail(id) {

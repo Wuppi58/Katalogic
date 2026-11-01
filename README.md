@@ -21,11 +21,15 @@ Installer ist nicht digital signiert und Windows kann deshalb eine
 SmartScreen-Warnung anzeigen.
 
 Die Katalogic-Startseite bietet eine Einführung und Schnellzugriffe. Die
-Navigationsleiste bündelt die spezialisierten Bereiche **Geräte**, **Spiele**,
+Navigationsleiste bündelt die spezialisierten Bereiche **Geräte**, **Uhren**, **Spiele**,
 **Bücher**, **Filme**, **Filamente** und **Kleinteile** im Menü **Verwaltung**. **Sammlung**
 zeigt gespeicherte allgemeine Einträge und direkte Zugänge zu den Bereichen;
-**Suchen** durchsucht den eigenen Bestand einschließlich Geräten, Spielen,
+**Suchen** durchsucht den eigenen Bestand einschließlich Geräten, Uhren, Spielen,
 Büchern, Filmen, Filamentrollen und Kleinteilen, auch per Kamera-Barcode-Scan.
+In allen Verwaltungsbereichen lassen sich angezeigte Einträge zusätzlich per
+A–Z-Navigation nach dem Anfangsbuchstaben des Namens filtern.
+Kaufpreise und geschätzte Werte werden in den Karten und Detailansichten farblich
+passend hervorgehoben.
 Die Suchfelder dieser Verwaltungsbereiche können ebenfalls per Kamera-Barcode-Scan
 befüllt werden; der erkannte Code filtert dann den jeweiligen Bestand.
 Neue Verwaltungsansichten werden mit `data-management-view`,
@@ -64,24 +68,29 @@ und in JSON-Sicherungen; eine Supabase-Synchronisierung ist dafür nicht aktivie
 Die Filamentverwaltung speichert Produktdaten, einzelne Rollen, Verbrauchshistorien,
 Profile und Fotos lokal und in JSON-Sicherungen; eine Supabase-Synchronisierung
 ist dafür nicht aktiviert.
-Die Kleinteileverwaltung speichert Artikel, Fotos, Lagerorte und
-Bestandsbuchungen lokal im Katalogic-State und in JSON-Sicherungen; eine
+Die Kleinteileverwaltung speichert Artikel mit optionalem Kaufpreis, Fotos,
+Lagerorte und Bestandsbuchungen lokal im Katalogic-State und in JSON-Sicherungen; eine
 Supabase-Synchronisierung ist dafür nicht aktiviert. Eigene Artikel- und
 Lagerortkennungen lassen sich als QR- oder Code-128-Etikett drucken. USB- und
 Bluetooth-Scanner funktionieren als Tastatureingabe; Kamerascans benötigen
 einen Browser mit `BarcodeDetector` und eine Kameraberechtigung.
+Die Uhrenverwaltung erfasst Uhren mit Hersteller-, Werk-, Zustands- und
+Wertdaten, bis zu acht gespeicherten Bildern pro Uhr sowie eigenen technischen
+Vorlagen für Armband-, Taschen-, Smart-, Wand- und Tischuhren. Die Einträge werden lokal gespeichert, durchsucht und in
+JSON-Sicherungen sowie PDF-Übersichten aufgenommen; eine Supabase-Synchronisierung
+ist dafür nicht aktiviert.
 
 ## Sammlung und Suche
 
 Die Sammlungsübersicht bietet über die Auswahl **Sammlung auswählen** „Alle
 Katalogeinträge“ sowie direkte Zugänge zu den eigenständigen Bereichen
-**Geräte**, **Spiele**, **Bücher**, **Filme**, **Filamente** und **Kleinteile**. Bereits vorhandene allgemeine
+**Geräte**, **Uhren**, **Spiele**, **Bücher**, **Filme**, **Filamente** und **Kleinteile**. Bereits vorhandene allgemeine
 Katalogeinträge bleiben in Sammlung, Suche und Sicherungen erhalten und können
 weiterhin bearbeitet oder gelöscht werden.
 Der allgemeine Bereich **Hinzufügen** wurde entfernt; neue Einträge werden in
 den jeweiligen Verwaltungsbereichen angelegt.
 
-Die Bestandssuche durchsucht den lokalen Bestand einschließlich Geräte, Spiele,
+Die Bestandssuche durchsucht den lokalen Bestand einschließlich Geräte, Uhren, Spiele,
 Bücher, Filme, Filamentrollen und Kleinteile. Barcodes können dort per Kamera (Browser mit
 `BarcodeDetector` erforderlich) oder USB-/Bluetooth-Scanner eingegeben werden.
 Der separate Bereich **Barcode** bleibt zum Erzeugen eigener Barcodes und zum
