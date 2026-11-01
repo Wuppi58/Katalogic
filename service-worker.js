@@ -1,10 +1,10 @@
 "use strict";
 
-const CACHE_NAME = "katalogic-static-v128";
+const CACHE_NAME = "katalogic-static-v129";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=management-7",
+  "./styles.css?v=management-8",
   "./devices.css?v=devices-3",
   "./games.css?v=games-4",
   "./books.css?v=books-4",

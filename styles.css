@@ -747,7 +747,8 @@ html[data-theme="light"] .management-menu-link > span { color: #7161d6; }
 .management-alphabet-button:disabled { opacity: .35; cursor: not-allowed; }
 .management-alphabet-all { min-width: 48px; }
 .management-alphabet-summary { display: block; margin-top: 6px; color: var(--muted); font-size: 10px; }
-.money-amount { color: var(--green); font-weight: 750; }
+html .money-amount { color: #18734d; font-weight: 750; }
+html[data-theme="dark"] .money-amount { color: #78d9b1; }
 #filament-total-value { color: var(--green); font-weight: 750; }
 @media (max-width: 600px) {
   .management-alphabet-buttons { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
